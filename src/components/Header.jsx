@@ -112,7 +112,9 @@ export default function Header() {
           // If the stored logoUrl is a path (e.g. "/uploads/x.jpg")
           // prefix it with the API base so the browser requests the
           // image from the backend server instead of the Vite dev server.
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const isProduction = import.meta.env.VITE_ENV === 'production';
+          const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
+            || 'http://localhost:5000';
           const raw = data.logoUrl || '';
           const final = raw && !/^https?:\/\//i.test(raw) ? `${API_URL}${raw}` : raw;
           setLogoUrl(final);

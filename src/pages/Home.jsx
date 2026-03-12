@@ -54,7 +54,9 @@ export default function Home() {
     // Fetch dynamic content (hero slides, projects) from the content API
     // so uploaded images saved in the admin panel appear on the home page.
     let mounted = true;
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const isProduction = import.meta.env.VITE_ENV === 'production';
+    const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
+      || "http://localhost:5000";
     (async () => {
       try {
         const { fetchContent } = await import("../api/contentApi");
