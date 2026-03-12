@@ -4,9 +4,7 @@ import "../styles/admin-dashboard.css";
 import { fetchContent as apiFetchContent, uploadFile as apiUploadFile, saveContent as apiSaveContent, deleteContent as apiDeleteContent, listMedia as apiListMedia } from "../api/contentApi";
 import { getLogo as apiGetLogo, saveLogo as apiSaveLogo } from "../api/settingsApi";
 
-const isProduction = import.meta.env.VITE_ENV === 'production';
-const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
-  || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 /*
   Developer comments / suggested improvements (only comments):

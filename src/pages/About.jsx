@@ -17,9 +17,7 @@ export default function About() {
 
   useEffect(() => {
     let mounted = true;
-    const isProduction = import.meta.env.VITE_ENV === 'production';
-    const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
-      || "http://localhost:5000";
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
     (async () => {
       try {

@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/admin.css";
 
 // Base API url (can be configured in .env as VITE_API_URL)
-const isProduction = import.meta.env.VITE_ENV === 'production';
-const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
-  || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // DEV-only credentials (set in .env.local as VITE_ADMIN_USERNAME / VITE_ADMIN_PASSWORD)
 // Fall back to the old VITE_ADMIN_EMAIL env var if username isn't provided to avoid breaking older setups.
