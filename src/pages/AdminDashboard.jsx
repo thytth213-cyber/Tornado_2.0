@@ -8,40 +8,6 @@ const isProduction = import.meta.env.VITE_ENV === 'production';
 const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
   || "http://localhost:5000";
 
-/*
-  Developer comments / suggested improvements (only comments):
-
-  - Centralize API calls: move repeated fetch calls into a shared API client
-    (`src/api/clients.jsx`). This reduces duplication (base URL, auth header,
-    error parsing) and makes it easier to add retry, logging, or token refresh.
-
-  - Error reporting: currently errors are logged to the console. Add user-
-    visible error messages or UI alerts for network failures and validation
-    errors. Consider an error boundary for unexpected runtime errors.
-
-  - Loading UX: there is a single `loading` boolean for content fetch. For
-    better UX, consider per-operation loading states (e.g., saving, deleting)
-    so the UI can show action-specific indicators.
-
-  - File uploads: when appending `image` to FormData, validate file size/type
-    client-side before uploading to save bandwidth and avoid server errors.
-
-  - Optimistic UI / feedback: after save/delete, you refetch the whole list.
-    Consider optimistic updates for snappier UX (update the UI immediately
-    and roll back on error) or show a small spinner on the specific item.
-
-  - Authorization header: always include token handling in a central place.
-    If a request returns 401, clear local credentials and redirect to login.
-
-  - Pagination / large lists: if content can grow large, implement pagination
-    or lazy loading instead of fetching all items at once.
-
-  - Confirmations: you already ask `window.confirm` for delete; consider a
-    styled in-app modal for a better UX and to avoid browser confirm's
-    inconsistent styling across platforms.
-
-*/
-
 export default function AdminDashboard() {
   const pages = useMemo(
     () => [
@@ -65,7 +31,6 @@ export default function AdminDashboard() {
   const [formData, setFormData] = useState({ section: "home-hero", title: "", body: "", mediaUrl: "", order: 0 });
   const [fileUploading, setFileUploading] = useState(false);
   const [uploadSection, setUploadSection] = useState(formData.section || "");
-  // avoid reading localStorage during render (SSR / hydration safety)
   const [adminUsername, setAdminUsername] = useState("");
   const [mediaList, setMediaList] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -74,6 +39,8 @@ export default function AdminDashboard() {
   const [brandingSaving, setBrandingSaving] = useState(false);
   const [filterPage, setFilterPage] = useState("home");
   const [filterSection, setFilterSection] = useState("");
+  const [pendingFile, setPendingFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -84,13 +51,11 @@ export default function AdminDashboard() {
     loadMedia();
   }, []);
 
-  // keep uploadSection in sync when formData.section changes
   useEffect(() => {
     setUploadSection(formData.section || "");
   }, [formData.section]);
 
   useEffect(() => {
-    // load current site logo
     let mounted = true;
     (async () => {
       try {
@@ -103,7 +68,6 @@ export default function AdminDashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // read localStorage only after mount to avoid potential SSR/window issues
   useEffect(() => {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -111,10 +75,23 @@ export default function AdminDashboard() {
         if (u) setAdminUsername(u);
       }
     } catch (err) {
-      // ignore localStorage errors (e.g., blocked storage)
       console.warn("Could not read localStorage:", err);
     }
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const normalizeUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('blob:')) return url;
+    return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`;
+  };
 
   const loadContent = async () => {
     try {
@@ -146,15 +123,12 @@ export default function AdminDashboard() {
       const data = await apiUploadFile(file, sectionToSend);
       const url = data && data.url ? data.url : null;
       if (url) {
-        // prepend to media list and select
         setMediaList((cur) => [{ filename: url.split('/').pop(), url, ext: (url.split('.').pop() || '').toLowerCase(), createdAt: new Date().toISOString() }, ...cur]);
         setSelectedMediaUrl(url);
-        // also populate current form
         setFormData((f) => ({ ...f, mediaUrl: url }));
       }
       console.log('Upload response:', data);
       if (url) {
-        // user-visible success feedback
         alert('Upload successful');
       }
       return url;
@@ -187,13 +161,37 @@ export default function AdminDashboard() {
   };
 
   const handleSaveLogo = async () => {
-    if (!selectedMediaUrl) return alert('Please select a media item to use as logo');
     setBrandingSaving(true);
     try {
-      await apiSaveLogo(selectedMediaUrl);
-      setCurrentLogoUrl(selectedMediaUrl);
+      let finalLogoUrl = selectedMediaUrl;
+
+      if (pendingFile) {
+        setFileUploading(true);
+        try {
+          const uploadedUrl = await handleUploadFile(pendingFile, 'logo');
+          if (uploadedUrl) {
+            finalLogoUrl = uploadedUrl;
+          }
+          setPendingFile(null);
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl("");
+          }
+        } catch (err) {
+          console.error("Upload failed during save logo:", err);
+          return alert("Upload failed. Please try again.");
+        } finally {
+          setFileUploading(false);
+        }
+      }
+
+      if (!finalLogoUrl) return alert('Please select a media item or upload an image to use as logo');
+
+      await apiSaveLogo(finalLogoUrl);
+      setCurrentLogoUrl(finalLogoUrl);
+      setSelectedMediaUrl(finalLogoUrl);
       // notify header to update immediately
-  window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: selectedMediaUrl } }));
+      window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: finalLogoUrl } }));
       alert('Logo saved');
     } catch (err) {
       console.error('Save logo failed', err);
@@ -205,29 +203,45 @@ export default function AdminDashboard() {
 
   const handleSave = async () => {
     try {
-      // ensure section is set
       if (!formData.section) return alert("Please select a section");
 
-      // special-case: if admin is creating a header-logo item, set the global logo
+      let finalMediaUrl = formData.mediaUrl;
+      if (pendingFile) {
+        setFileUploading(true);
+        try {
+          const uploadedUrl = await handleUploadFile(pendingFile, formData.section);
+          if (uploadedUrl) {
+            finalMediaUrl = uploadedUrl;
+          }
+          setPendingFile(null);
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl("");
+          }
+        } catch (err) {
+          console.error("Upload failed during save:", err);
+          return alert("Upload failed. Please try again.");
+        } finally {
+          setFileUploading(false);
+        }
+      }
+
       if (formData.section === 'header-logo') {
-        if (!formData.mediaUrl) return alert('Please select or upload an image to use as the header logo');
+        if (!finalMediaUrl) return alert('Please select or upload an image to use as the header logo');
         setBrandingSaving(true);
         try {
-          const payload = { logoUrl: formData.mediaUrl };
+          const payload = { logoUrl: finalMediaUrl };
           console.log('Saving payload:', payload);
-          const result = await apiSaveLogo(formData.mediaUrl);
+          const result = await apiSaveLogo(finalMediaUrl);
           console.log('Save response:', result);
-          setCurrentLogoUrl(formData.mediaUrl);
-          window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: formData.mediaUrl } }));
-          // update filters so UI reflects settings area
+          setCurrentLogoUrl(finalMediaUrl);
+          window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: finalMediaUrl } }));
           setFilterPage('settings');
           setFilterSection('header-logo');
           await loadContent();
           alert('Header logo updated successfully');
-          // clear form safely
           setEditingId(null);
           setFormData({ section: `${filterPage}-hero`, title: "", body: "", mediaUrl: "", order: 0 });
-          // also refresh media if needed
           await loadMedia();
         } catch (err) {
           console.error('Save failed:', err);
@@ -243,7 +257,7 @@ export default function AdminDashboard() {
         section: formData.section,
         title: formData.title,
         body: formData.body,
-        mediaUrl: formData.mediaUrl,
+        mediaUrl: finalMediaUrl,
         order: Number(formData.order) || 0,
       };
 
@@ -252,7 +266,6 @@ export default function AdminDashboard() {
         const result = await apiSaveContent(payload);
         console.log('Save response:', result);
 
-        // compute page key from section (e.g., "home-hero" -> "home")
         const pageKey = (payload.section || '').split('-')[0] || filterPage;
         setFilterPage(pageKey);
         setFilterSection(payload.section);
@@ -261,7 +274,6 @@ export default function AdminDashboard() {
 
         alert('Content saved successfully');
 
-        // reset editing state safely
         setEditingId(null);
         setFormData({ section: payload.section, title: "", body: "", mediaUrl: "", order: 0 });
       } catch (err) {
@@ -346,7 +358,6 @@ export default function AdminDashboard() {
           <div className="content-wrap">
             <div className="content-main">
               <div className="content-list">
-                {/* Form area */}
                 <div className="content-item content-form">
                   <h3>{editingId ? "Edit Item" : "Create Item"}</h3>
                   <div className="form-row">
@@ -373,16 +384,23 @@ export default function AdminDashboard() {
                   </div>
                   <div className="form-row">
                     <label>Upload Image</label>
-                    <input type="file" accept="image/*" onChange={async (e) => {
+                    <input type="file" accept="image/*" onChange={(e) => {
                       const file = e.target.files[0];
                       if (!file) return;
                       if (!formData.section) return alert('Please select a section for this content before uploading');
-                      const url = await handleUploadFile(file, formData.section);
-                      if (url) setFormData({ ...formData, mediaUrl: url });
+
+                      setPendingFile(file);
+
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                      }
+                      const localUrl = URL.createObjectURL(file);
+                      setPreviewUrl(localUrl);
+                      setFormData({ ...formData, mediaUrl: localUrl });
                     }} />
                     {fileUploading && <span>Uploading...</span>}
+                    {pendingFile && !fileUploading && <span style={{ color: '#f59e0b' }}>📁 File ready - will upload on Save</span>}
                   </div>
-                  {/* header-logo special handling: when section is header-logo show extra note and allow saving as site logo */}
                   {formData.section === 'header-logo' && (
                     <div className="form-row">
                       <label>Header Logo</label>
@@ -390,7 +408,7 @@ export default function AdminDashboard() {
                         <div style={{ fontSize: 13, color: '#64748b' }}>Choose or upload an image and click Create to set the site header logo.</div>
                         <input type="text" value={formData.mediaUrl} readOnly placeholder="Select or upload an image from the media library" />
                         {formData.mediaUrl && (
-                          <img src={`${API_URL}${formData.mediaUrl}`} alt="header-logo-preview" style={{ maxWidth: 260, maxHeight: 80 }} />
+                          <img src={normalizeUrl(formData.mediaUrl)} alt="header-logo-preview" style={{ maxWidth: 260, maxHeight: 80 }} />
                         )}
                       </div>
                     </div>
@@ -398,20 +416,27 @@ export default function AdminDashboard() {
                   {formData.mediaUrl && (
                     <div className="form-row">
                       <label>Preview</label>
-                      <img src={`${API_URL}${formData.mediaUrl}`} alt="preview" style={{ maxWidth: 200 }} />
+                      <img src={normalizeUrl(formData.mediaUrl)} alt="preview" style={{ maxWidth: 200 }} />
                     </div>
                   )}
                   <div className="form-actions">
                     <button onClick={handleSave} className="btn btn-primary">{editingId ? 'Save Changes' : 'Create'}</button>
-                    <button onClick={() => { setEditingId(null); setFormData({ section: `${filterPage}-hero`, title: '', body: '', mediaUrl: '', order: 0 }); }} className="btn btn-outline">Reset</button>
+                    <button onClick={() => {
+                      setEditingId(null);
+                      setFormData({ section: `${filterPage}-hero`, title: '', body: '', mediaUrl: '', order: 0 });
+                      setPendingFile(null);
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl('');
+                      }
+                    }} className="btn btn-outline">Reset</button>
                   </div>
                 </div>
 
-                {/* List area */}
                 {filtered.map((item) => (
                   <div key={item._id} className="content-item">
                     <div className="content-preview">
-                      {item.mediaUrl && (<img src={`${API_URL}${item.mediaUrl}`} alt={item.title} className="content-image" />)}
+                      {item.mediaUrl && (<img src={normalizeUrl(item.mediaUrl)} alt={item.title} className="content-image" />)}
                       <h3>{item.title || '(no title)'}</h3>
                       <p><strong>Section:</strong> {item.section} <strong>Order:</strong> {item.order}</p>
                       <p>{item.body}</p>
@@ -435,7 +460,7 @@ export default function AdminDashboard() {
                 <div className="branding-preview">
                   <div className="branding-label">Current Logo</div>
                   {currentLogoUrl ? (
-                    <img src={`${API_URL}${currentLogoUrl}`} alt="Current logo" style={{ maxWidth: '100%', maxHeight: 80 }} />
+                    <img src={normalizeUrl(currentLogoUrl)} alt="Current logo" style={{ maxWidth: '100%', maxHeight: 80 }} />
                   ) : (
                     <div className="media-empty">No logo set</div>
                   )}
@@ -453,21 +478,25 @@ export default function AdminDashboard() {
               </div>
 
               <div className="media-controls">
-                <label className="media-upload-label">Upload New</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <select value={uploadSection} onChange={(e) => setUploadSection(e.target.value)}>
-                    <option value="">-- select section --</option>
-                    <option value="home-hero">home-hero (1920x1080)</option>
-                    <option value="home-projects">home-projects (600x400)</option>
-                    <option value="home-about">home-about (800x600)</option>
-                    <option value="logo">logo (200x100)</option>
-                  </select>
-                  <input type="file" accept="image/*" onChange={async (e) => {
+                <label className="media-upload-label">Upload New Logo</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <input type="file" accept="image/*" onChange={(e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    if (!uploadSection) return alert('Please select a section before uploading');
-                    await handleUploadFile(file, uploadSection);
+
+                    setPendingFile(file);
+
+                    if (previewUrl) {
+                      URL.revokeObjectURL(previewUrl);
+                    }
+                    const localUrl = URL.createObjectURL(file);
+                    setPreviewUrl(localUrl);
+                    setSelectedMediaUrl(localUrl); // Show in Selected Logo URL field
                   }} />
+                  {pendingFile && <span style={{ fontSize: '13px', color: '#f59e0b' }}>📁 {pendingFile.name} - will upload on "Save Logo"</span>}
+                  {previewUrl && (
+                    <img src={previewUrl} alt="Preview" style={{ maxWidth: 200, maxHeight: 100, border: '2px dashed #f59e0b', borderRadius: 4, padding: 4 }} />
+                  )}
                 </div>
               </div>
 
@@ -482,7 +511,7 @@ export default function AdminDashboard() {
                     return (
                       <div key={m.filename} className={`media-item ${selectedMediaUrl === m.url ? 'selected' : ''}`} onClick={() => handleSelectMedia(m)}>
                         {isImage ? (
-                          <img src={`${API_URL}${m.url}`} alt={m.filename} />
+                          <img src={normalizeUrl(m.url)} alt={m.filename} />
                         ) : (
                           <div className="media-file">{m.filename}</div>
                         )}

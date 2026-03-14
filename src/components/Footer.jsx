@@ -115,12 +115,12 @@ export default function Footer() {
           <div className="footer-col-3">
             <h4>Contact Information</h4>
             <div className="f-links">
-              <p>111 Somerset Road, #1136 TripleOne Somerset Singapore 238164</p>
-              <a href="tel:+6567321431" className="contact-item">
-                <strong>Tel:</strong> +65 67321431
+              <p>Room 1702, Sino Centre, 582-592 Nathan Rd., Mongkok, Kowloon, Hong Kong</p>
+              <a href="tel:+85223841431" className="contact-item">
+                <strong>Tel:</strong> +852 23841431
               </a>
-              <a href="mailto:enquiry@bgconsultantpteltd.com" className="contact-item">
-                <strong>Email:</strong> enquiry@bgconsultantpteltd.com
+              <a href="mailto:sale@tornado.biz" className="contact-item">
+                <strong>Email:</strong> sale@tornado.biz
               </a>
             </div>
           </div>
@@ -129,8 +129,8 @@ export default function Footer() {
         <div className="footer-bottom-container">
           <div className="copyright">
             <span>
-              © 2017 - {new Date().getFullYear()} <strong>B & G CONSULTANT PTE LTD</strong>. All
-              Rights Reserved. Design by Vodien
+              © 2017 - {new Date().getFullYear()} <strong>TORNADO INDUSTRIAL CO., LIMITED</strong>.
+              All Rights Reserved. Design by Vodien
             </span>
           </div>
           <button className="back-to-top" onClick={scrollToTop} aria-label="Back to top">
