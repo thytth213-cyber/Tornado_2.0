@@ -117,7 +117,7 @@ export default function Footer() {
             <div className="f-links">
               <p>Room 1702, Sino Centre, 582-592 Nathan Rd., Mongkok, Kowloon, Hong Kong</p>
               <a href="tel:+85223841431" className="contact-item">
-                <strong>Tel:</strong> +852 23841431
+                <strong>Tel:</strong> +852 23840332
               </a>
               <a href="mailto:sale@tornado.biz" className="contact-item">
                 <strong>Email:</strong> sale@tornado.biz
