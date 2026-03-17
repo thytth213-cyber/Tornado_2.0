@@ -130,7 +130,6 @@ export default function Footer() {
           <div className="copyright">
             <span>
               © 2017 - {new Date().getFullYear()} <strong>TORNADO INDUSTRIAL CO., LIMITED</strong>.
-              All Rights Reserved. Design by Vodien
             </span>
           </div>
           <button className="back-to-top" onClick={scrollToTop} aria-label="Back to top">
