@@ -78,7 +78,7 @@ export default function Contact() {
 
                 <div className="info-item">
                   <div className="info-icon">
-                    <i className="fa-solid fa-location-dot"></i>
+                    <i className="fa-solid fa-location-dot">📍</i>
                   </div>
                   <div className="info-content">
                     <h4>Address</h4>
@@ -88,7 +88,7 @@ export default function Contact() {
 
                 <div className="info-item">
                   <div className="info-icon">
-                    <i className="fa-solid fa-phone"></i>
+                    <i className="fa-solid fa-phone">📞</i>
                   </div>
                   <div className="info-content">
                     <h4>Phone</h4>
@@ -98,7 +98,7 @@ export default function Contact() {
 
                 <div className="info-item">
                   <div className="info-icon">
-                    <i className="fa-solid fa-envelope"></i>
+                    <i className="fa-solid fa-envelope">✉️</i>
                   </div>
                   <div className="info-content">
                     <h4>Email</h4>
@@ -108,7 +108,8 @@ export default function Contact() {
 
                 <div className="info-item">
                   <div className="info-icon">
-                    <i className="fa-solid fa-clock"></i>
+                    <i className="fa-solid fa-clock">⏰</i>
+
                   </div>
                   <div className="info-content">
                     <h4>Business Hours</h4>

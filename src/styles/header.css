@@ -167,7 +167,7 @@ nav.main-nav a:hover{
 }
 nav.main-nav a.active{
   background: rgba(59,130,246,0.12);
-  color: var(--blue-600);
+  color: #fff;
   padding:8px 18px;
   border-radius:20px;
 }

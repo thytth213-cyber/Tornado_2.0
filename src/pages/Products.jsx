@@ -216,7 +216,7 @@ export default function Products() {
           <div className="benefits-grid" style={{ marginTop: "32px" }}>
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-check-circle"></i>
+                <i className="fa-solid fa-check-circle">✓</i>
               </div>
               <h3>Quality Assured</h3>
               <p>All products meet international quality and safety standards</p>
@@ -224,7 +224,7 @@ export default function Products() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-headset"></i>
+                <i className="fa-solid fa-headset">🎧</i>
               </div>
               <h3>Expert Support</h3>
               <p>Dedicated technical support team available 24/7</p>
@@ -232,7 +232,7 @@ export default function Products() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-truck"></i>
+                <i className="fa-solid fa-truck">🚚</i>
               </div>
               <h3>Fast Delivery</h3>
               <p>Reliable shipping and logistics to your location</p>
@@ -240,7 +240,7 @@ export default function Products() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-handshake"></i>
+                <i className="fa-solid fa-handshake">🤝</i>
               </div>
               <h3>Long-term Partnership</h3>
               <p>Build lasting relationships with our service-oriented approach</p>

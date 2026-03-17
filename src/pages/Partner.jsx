@@ -159,7 +159,7 @@ export default function Partner() {
           <div className="benefits-grid" ref={benefitsRef}>
             <div className="benefit-card" data-stagger-child>
               <div className="benefit-icon">
-                <i className="fa-solid fa-globe"></i>
+                <i className="fa-solid fa-globe">🌐</i>
               </div>
               <h3>Global Reach</h3>
               <p>
@@ -170,7 +170,7 @@ export default function Partner() {
 
             <div className="benefit-card" data-stagger-child>
               <div className="benefit-icon">
-                <i className="fa-solid fa-lightbulb"></i>
+                <i className="fa-solid fa-lightbulb">💡</i>
               </div>
               <h3>Innovation Support</h3>
               <p>
@@ -181,7 +181,7 @@ export default function Partner() {
 
             <div className="benefit-card" data-stagger-child>
               <div className="benefit-icon">
-                <i className="fa-solid fa-handshake"></i>
+                <i className="fa-solid fa-handshake">🤝</i>
               </div>
               <h3>Long-term Commitment</h3>
               <p>
@@ -192,7 +192,7 @@ export default function Partner() {
 
             <div className="benefit-card" data-stagger-child>
               <div className="benefit-icon">
-                <i className="fa-solid fa-chart-line"></i>
+                <i className="fa-solid fa-chart-line">📈</i>
               </div>
               <h3>Mutual Growth</h3>
               <p>

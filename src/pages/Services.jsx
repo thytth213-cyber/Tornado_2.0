@@ -231,7 +231,7 @@ export default function Services() {
           <div className="benefits-grid" style={{ marginTop: "32px" }}>
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star">⭐</i>
               </div>
               <h3>Expertise</h3>
               <p>Years of industry experience and proven track record</p>
@@ -239,7 +239,7 @@ export default function Services() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-clock"></i>
+                <i className="fa-solid fa-clock">🕐</i>
               </div>
               <h3>On-Time Delivery</h3>
               <p>Committed to meeting deadlines and timelines</p>
@@ -247,7 +247,7 @@ export default function Services() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-shield"></i>
+                <i className="fa-solid fa-shield">🛡️</i>
               </div>
               <h3>Quality Assurance</h3>
               <p>Rigorous quality control at every stage</p>
@@ -255,7 +255,7 @@ export default function Services() {
 
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
-                <i className="fa-solid fa-users"></i>
+                <i className="fa-solid fa-users">👥</i>
               </div>
               <h3>Professional Team</h3>
               <p>Dedicated specialists ready to support you</p>

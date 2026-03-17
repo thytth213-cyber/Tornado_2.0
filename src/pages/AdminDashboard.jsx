@@ -479,7 +479,7 @@ export default function AdminDashboard() {
 
               <div className="media-controls">
                 <label className="media-upload-label">Upload New Logo</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'flex-start' }}>
                   <input type="file" accept="image/*" onChange={(e) => {
                     const file = e.target.files[0];
                     if (!file) return;

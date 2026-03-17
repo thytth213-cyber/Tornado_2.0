@@ -119,7 +119,7 @@ export default function About() {
             {/* Mission Card */}
             <div className="card mission-card hover-up" data-stagger-child>
               <div className="card-icon">
-                <i className="fa-solid fa-target"></i>
+                <i className="fa-solid fa-target">🎯</i>
               </div>
               <h3>Our Mission</h3>
               <p>
@@ -131,7 +131,7 @@ export default function About() {
             {/* Vision Card */}
             <div className="card mission-card hover-up" data-stagger-child>
               <div className="card-icon">
-                <i className="fa-solid fa-eye"></i>
+                <i className="fa-solid fa-eye">👁️</i>
               </div>
               <h3>Our Vision</h3>
               <p>
@@ -143,21 +143,21 @@ export default function About() {
             {/* Values Card */}
             <div className="card mission-card hover-up" data-stagger-child>
               <div className="card-icon">
-                <i className="fa-solid fa-heart"></i>
+                <i className="fa-solid fa-heart">❤️</i>
               </div>
               <h3>Our Values</h3>
               <ul className="values-list">
                 <li>
-                  <i className="fa-solid fa-check"></i> Excellence & Innovation
+                  <i className="fa-solid fa-check">✓</i> Excellence & Innovation
                 </li>
                 <li>
-                  <i className="fa-solid fa-check"></i> Integrity & Transparency
+                  <i className="fa-solid fa-check">✓</i> Integrity & Transparency
                 </li>
                 <li>
-                  <i className="fa-solid fa-check"></i> Customer Commitment
+                  <i className="fa-solid fa-check">✓</i> Customer Commitment
                 </li>
                 <li>
-                  <i className="fa-solid fa-check"></i> Team Collaboration
+                  <i className="fa-solid fa-check">✓</i> Team Collaboration
                 </li>
               </ul>
             </div>

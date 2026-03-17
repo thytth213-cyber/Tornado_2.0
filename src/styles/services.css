@@ -319,12 +319,26 @@
 .services-main .benefit-card:hover {
   box-shadow: var(--shadow2);
   transform: translateY(-4px);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  border-color: var(--primary-hover);
+}
+
+.services-main .benefit-card:hover h3,
+.services-main .benefit-card:hover p {
+  color: white;
 }
 
 .services-main .benefit-icon {
   font-size: 32px;
   color: var(--primary);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  transition: color var(--t);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.services-main .benefit-card:hover .benefit-icon {
+  color: white;
 }
 
 .services-main .benefit-card h3 {
@@ -332,12 +346,14 @@
   font-weight: 600;
   margin-bottom: 12px;
   color: var(--text);
+  transition: color var(--t);
 }
 
 .services-main .benefit-card p {
   font-size: 14px;
   color: var(--muted);
   line-height: 1.7;
+  transition: color var(--t);
 }
 
 /* ===== UTILITIES ===== */
