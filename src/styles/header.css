@@ -92,11 +92,6 @@ header.site-header.scrolled{
 .brand-logo{
   height:42px;
   object-fit:contain;
-  border-radius:12px;
-  background:#fff;
-  padding:6px;
-  border:1px solid rgba(229,231,235,.8);
-  box-shadow: var(--shadow1);
   flex-shrink:0;
   /* Ensure the logo is visible even if other rules attempt to hide or fade images */
   opacity: 1 !important;
