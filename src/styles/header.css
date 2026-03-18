@@ -28,10 +28,9 @@
 header.site-header{
   position: static;
   width:100%;
-  border-bottom: 1px solid rgba(255,255,255,.1);
+  background: none;
   transition:
     box-shadow 0.3s ease,
-    background 0.3s ease,
     border-color 0.3s ease,
 }
 
@@ -90,7 +89,7 @@ header.site-header.scrolled .navwrap{
   font-weight:900;
   font-size:18px;
   letter-spacing:0.2px;
-  color:#fff; /* white by default */
+  color:rgba(7, 17, 41, 0.95); /* white by default */
   flex-shrink:0;
   text-decoration:none;
   transition:opacity var(--t), color var(--t);
@@ -99,7 +98,7 @@ header.site-header.scrolled .navwrap{
 }
 
 .brand-text{
-  color:#fff;
+  color:rgba(7, 17, 41, 0.95);
   transition:color var(--t);
 }
 .brand:hover { 
