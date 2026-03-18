@@ -452,11 +452,11 @@ export default function Home() {
                       <img
                         src={product.resolvedImage}
                         alt={product.name}
-                        width="250"
-                        height="250"
+                        width="300"
+                        height="300"
                       />
                     ) : (
-                      <div className="product-placeholder" style={{ width: '250px', height: '250px', backgroundColor: '#e0e0e0' }} />
+                      <div className="product-placeholder" style={{ width: '300px', height: '300px', backgroundColor: '#e0e0e0' }} />
                     )}
                   </div>
                   <h3>{product.name}</h3>
