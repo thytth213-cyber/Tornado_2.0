@@ -26,12 +26,21 @@
 
 /* ===== HEADER full width ===== */
 header.site-header{
-  position: static;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
   width:100%;
-  background: none;
+  background: transparent;
+  border-bottom: 1px solid rgba(255,255,255,.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition:
     box-shadow 0.3s ease,
+    background 0.3s ease,
     border-color 0.3s ease,
+    backdrop-filter 0.3s ease;
 }
 
 @keyframes slideDownHeader {
@@ -89,7 +98,7 @@ header.site-header.scrolled .navwrap{
   font-weight:900;
   font-size:18px;
   letter-spacing:0.2px;
-  color:rgba(7, 17, 41, 0.95); /* white by default */
+  color:#fff; /* white by default */
   flex-shrink:0;
   text-decoration:none;
   transition:opacity var(--t), color var(--t);
@@ -98,7 +107,7 @@ header.site-header.scrolled .navwrap{
 }
 
 .brand-text{
-  color:rgba(7, 17, 41, 0.95);
+  color:#fff;
   transition:color var(--t);
 }
 .brand:hover { 
