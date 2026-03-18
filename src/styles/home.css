@@ -364,6 +364,17 @@
   overflow: hidden;
 }
 
+.products-main .section {
+  padding: 60px 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.products-main .section.soft {
+  background: #f8fafc;
+}
+
+
 /* Product icons/cards alignment */
 .solutions-grid .solution-card {
   padding: 28px;

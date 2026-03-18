@@ -438,100 +438,41 @@ export default function Home() {
       </section>
 
       {/* ===== PRODUCTS SECTION ===== */}
-      <section id="products" className="products-section">
+      <section className="section">
         <div className="container">
-          <div className="section-header">
-            <h2>Our Products</h2>
-          </div>
-          <div className="products-grid" ref={productsRef}>
-            {products.length > 0 ? (
-              products.map((product) => (
-                <div key={product._id} className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    {product.resolvedImage ? (
-                      <img
-                        src={product.resolvedImage}
-                        alt={product.name}
-                        width="300"
-                        height="300"
-                      />
-                    ) : (
-                      <div className="product-placeholder" style={{ width: '300px', height: '300px', backgroundColor: '#e0e0e0' }} />
-                    )}
-                  </div>
-                  <h3>{product.name}</h3>
-                  {product.shortDescription && (
-                    <p className="product-description">{product.shortDescription}</p>
-                  )}
-                  {!product.shortDescription && product.description && (
-                    <p className="product-description">{product.description}</p>
-                  )}
-                </div>
-              ))
-            ) : (
-              // Fallback to hardcoded products if no database products are loaded
-              <>
-                <div className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    <img
-                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g552.svg"
-                      alt="Industrial Machinery"
-                      width="200"
-                      height="200"
-                    />
-                  </div>
-                  <h3>Industrial Machinery</h3>
-                </div>
+          <h2 className="h2">Why Choose Our Products</h2>
+          <div className="benefits-grid" style={{ marginTop: "32px" }}>
+            <div className="benefit-card animate-left">
+              <div className="benefit-icon">
+                <i className="fa-solid fa-check-circle">✓</i>
+              </div>
+              <h3>Quality Assured</h3>
+              <p>All products meet international quality and safety standards</p>
+            </div>
 
-                <div className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    <img
-                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-22.svg"
-                      alt="Telecommunications Equipment"
-                      width="200"
-                      height="200"
-                    />
-                  </div>
-                  <h3>Telecommunications Equipment</h3>
-                </div>
+            <div className="benefit-card animate-left">
+              <div className="benefit-icon">
+                <i className="fa-solid fa-headset">🎧</i>
+              </div>
+              <h3>Expert Support</h3>
+              <p>Dedicated technical support team available 24/7</p>
+            </div>
 
-                <div className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    <img
-                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-52.svg"
-                      alt="Lightning Systems"
-                      width="200"
-                      height="200"
-                    />
-                  </div>
-                  <h3>Lightning/ Metrological Systems/ Camera</h3>
-                </div>
+            <div className="benefit-card animate-left">
+              <div className="benefit-icon">
+                <i className="fa-solid fa-truck">🚚</i>
+              </div>
+              <h3>Fast Delivery</h3>
+              <p>Reliable shipping and logistics to your location</p>
+            </div>
 
-                <div className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    <img
-                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g2930.svg"
-                      alt="Fire Fighting Equipment"
-                      width="200"
-                      height="200"
-                    />
-                  </div>
-                  <h3>Fire Fighting Equipment</h3>
-                </div>
-
-                <div className="product-box" data-stagger-child>
-                  <div className="product-icon">
-                    <img
-                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-25.svg"
-                      alt="IT Hardware"
-                      width="200"
-                      height="200"
-                    />
-                  </div>
-                  <h3>IT Hardware & Software & Other Equipment</h3>
-                </div>
-              </>
-            )}
+            <div className="benefit-card animate-left">
+              <div className="benefit-icon">
+                <i className="fa-solid fa-handshake">🤝</i>
+              </div>
+              <h3>Long-term Partnership</h3>
+              <p>Build lasting relationships with our service-oriented approach</p>
+            </div>
           </div>
         </div>
       </section>
