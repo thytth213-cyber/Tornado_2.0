@@ -1,305 +1,435 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/admin-dashboard.css";
-import { fetchContent as apiFetchContent, uploadFile as apiUploadFile, saveContent as apiSaveContent, deleteContent as apiDeleteContent, listMedia as apiListMedia } from "../api/contentApi";
-import { getLogo as apiGetLogo, saveLogo as apiSaveLogo } from "../api/settingsApi";
+
+// API imports
+import { 
+  fetchContent, 
+  saveContent, 
+  deleteContent
+} from "../api/contentApi";
+import { 
+  fetchAllProducts, 
+  fetchProductCategories,
+  createProduct, 
+  updateProduct, 
+  deleteProduct,
+  createProductCategory,
+  updateProductCategory,
+  deleteProductCategory
+} from "../api/productsApi";
+import { 
+  fetchAllServices, 
+  fetchServiceCategories,
+  createService, 
+  updateService, 
+  deleteService,
+  createServiceCategory,
+  updateServiceCategory,
+  deleteServiceCategory
+} from "../api/servicesApi";
 
 const isProduction = import.meta.env.VITE_ENV === 'production';
 const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
   || "http://localhost:5000";
 
 export default function AdminDashboard() {
-  const pages = useMemo(
-    () => [
-      { key: "home", label: "Home", sections: ["home-hero","home-about","home-projects","home-partners","home-contact"] },
-      { key: "about", label: "About", sections: ["about-hero","about-story"] },
-      { key: "solutions", label: "Solutions", sections: ["solutions-hero","solutions-list"] },
-      { key: "projects", label: "Projects", sections: ["projects-hero","projects-list"] },
-      { key: "pricing", label: "Pricing", sections: ["pricing-hero","pricing-plans"] },
-      { key: "partners", label: "Partners", sections: ["partners-hero","partners-list"] },
-      { key: "stats", label: "Stats", sections: ["stats-main"] },
-      { key: "contact", label: "Contact", sections: ["contact-main"] },
-      // site-level settings (admin-controlled)
-      { key: "settings", label: "Settings", sections: ["header-logo"] },
-    ],
-    []
-  );
-
-  const [content, setContent] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ section: "home-hero", title: "", body: "", mediaUrl: "", order: 0 });
-  const [fileUploading, setFileUploading] = useState(false);
-  const [uploadSection, setUploadSection] = useState(formData.section || "");
-  const [adminUsername, setAdminUsername] = useState("");
-  const [mediaList, setMediaList] = useState([]);
-  const [mediaLoading, setMediaLoading] = useState(true);
-  const [selectedMediaUrl, setSelectedMediaUrl] = useState("");
-  const [currentLogoUrl, setCurrentLogoUrl] = useState("");
-  const [brandingSaving, setBrandingSaving] = useState(false);
-  const [filterPage, setFilterPage] = useState("home");
-  const [filterSection, setFilterSection] = useState("");
-  const [pendingFile, setPendingFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("content");
+  const [adminUsername, setAdminUsername] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
+  // CONTENT STATE
+  const [contentList, setContentList] = useState([]);
+  const [contentEditing, setContentEditing] = useState(null);
+  const [contentForm, setContentForm] = useState({
+    section: "home-hero",
+    title: "",
+    body: "",
+    mediaUrl: "",
+    order: 0
+  });
+  const [showContentModal, setShowContentModal] = useState(false);
+
+  // PRODUCT STATE
+  const [productList, setProductList] = useState([]);
+  const [productCategories, setProductCategories] = useState([]);
+  const [productEditing, setProductEditing] = useState(null);
+  const [productForm, setProductForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    shortDescription: "",
+    category: "",
+    price: 0,
+    image: "",
+    featured: false,
+    order: 0
+  });
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showProductCategoryModal, setShowProductCategoryModal] = useState(false);
+  const [productCategoryEditing, setProductCategoryEditing] = useState(null);
+  const [productCategoryForm, setProductCategoryForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    color: "#3498db",
+    order: 0
+  });
+
+  // SERVICE STATE
+  const [serviceList, setServiceList] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [serviceEditing, setServiceEditing] = useState(null);
+  const [serviceForm, setServiceForm] = useState({
+    name: "",
+    slug: "",
+    title: "",
+    description: "",
+    shortDescription: "",
+    category: "",
+    image: "",
+    featured: false,
+    order: 0,
+    icon: ""
+  });
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showServiceCategoryModal, setShowServiceCategoryModal] = useState(false);
+  const [serviceCategoryEditing, setServiceCategoryEditing] = useState(null);
+  const [serviceCategoryForm, setServiceCategoryForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    color: "#3498db",
+    order: 0
+  });
+
+  // Initialize
   useEffect(() => {
-    loadContent();
+    const u = localStorage.getItem("adminUsername") || localStorage.getItem("adminEmail");
+    if (u) setAdminUsername(u);
   }, []);
 
   useEffect(() => {
-    loadMedia();
-  }, []);
+    if (activeTab === "content") loadContent();
+  }, [activeTab]);
 
   useEffect(() => {
-    setUploadSection(formData.section || "");
-  }, [formData.section]);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await apiGetLogo();
-        if (mounted && res && res.logoUrl) setCurrentLogoUrl(res.logoUrl);
-      } catch (err) {
-        console.warn('Could not load site logo', err);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && window.localStorage) {
-        const u = localStorage.getItem("adminUsername") || localStorage.getItem("adminEmail");
-        if (u) setAdminUsername(u);
-      }
-    } catch (err) {
-      console.warn("Could not read localStorage:", err);
+    if (activeTab === "products") {
+      loadProducts();
+      loadProductCategories();
     }
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+    if (activeTab === "services") {
+      loadServices();
+      loadServiceCategories();
+    }
+  }, [activeTab]);
 
-  const normalizeUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('blob:')) return url;
-    return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`;
-  };
-
+  // ==================== CONTENT FUNCTIONS ====================
   const loadContent = async () => {
     try {
-      const data = await apiFetchContent();
-      setContent(data || []);
+      setIsLoading(true);
+      const data = await fetchContent();
+      setContentList(data || []);
     } catch (err) {
-      console.error("Error fetching content:", err);
+      setErrorMsg("Failed to load content: " + err.message);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const openCreate = (sectionKey) => {
-    setEditingId(null);
-    setFormData({ section: sectionKey || `${filterPage}-hero`, title: "", body: "", mediaUrl: "", order: 0 });
-  };
-
-  const handleEdit = (item) => {
-    setEditingId(item._id);
-    setFormData({ section: item.section, title: item.title || "", body: item.body || "", mediaUrl: item.mediaUrl || "", order: item.order || 0 });
-  };
-
-  const handleUploadFile = async (file, section) => {
-    if (!file) return null;
-    setFileUploading(true);
+  const handleContentSave = async () => {
     try {
-      // prefer explicit section param, fall back to current form section
-      const sectionToSend = section || formData.section || uploadSection || '';
-      const data = await apiUploadFile(file, sectionToSend);
-      const url = data && data.url ? data.url : null;
-      if (url) {
-        setMediaList((cur) => [{ filename: url.split('/').pop(), url, ext: (url.split('.').pop() || '').toLowerCase(), createdAt: new Date().toISOString() }, ...cur]);
-        setSelectedMediaUrl(url);
-        setFormData((f) => ({ ...f, mediaUrl: url }));
-      }
-      console.log('Upload response:', data);
-      if (url) {
-        alert('Upload successful');
-      }
-      return url;
-    } catch (err) {
-  console.error("Upload error", err);
-  alert(err.message || 'Upload failed');
-      return null;
-    } finally {
-      setFileUploading(false);
-    }
-  };
-
-  const loadMedia = async () => {
-    setMediaLoading(true);
-    try {
-      const list = await apiListMedia();
-      setMediaList(list || []);
-    } catch (err) {
-      console.error('Error loading media:', err);
-      setMediaList([]);
-    } finally {
-      setMediaLoading(false);
-    }
-  };
-
-  const handleSelectMedia = (item) => {
-    if (!item) return;
-    setSelectedMediaUrl(item.url);
-    setFormData((f) => ({ ...f, mediaUrl: item.url }));
-  };
-
-  const handleSaveLogo = async () => {
-    setBrandingSaving(true);
-    try {
-      let finalLogoUrl = selectedMediaUrl;
-
-      if (pendingFile) {
-        setFileUploading(true);
-        try {
-          const uploadedUrl = await handleUploadFile(pendingFile, 'logo');
-          if (uploadedUrl) {
-            finalLogoUrl = uploadedUrl;
-          }
-          setPendingFile(null);
-          if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-            setPreviewUrl("");
-          }
-        } catch (err) {
-          console.error("Upload failed during save logo:", err);
-          return alert("Upload failed. Please try again.");
-        } finally {
-          setFileUploading(false);
-        }
-      }
-
-      if (!finalLogoUrl) return alert('Please select a media item or upload an image to use as logo');
-
-      await apiSaveLogo(finalLogoUrl);
-      setCurrentLogoUrl(finalLogoUrl);
-      setSelectedMediaUrl(finalLogoUrl);
-      // notify header to update immediately
-      window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: finalLogoUrl } }));
-      alert('Logo saved');
-    } catch (err) {
-      console.error('Save logo failed', err);
-      alert(err.message || 'Save logo failed');
-    } finally {
-      setBrandingSaving(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      if (!formData.section) return alert("Please select a section");
-
-      let finalMediaUrl = formData.mediaUrl;
-      if (pendingFile) {
-        setFileUploading(true);
-        try {
-          const uploadedUrl = await handleUploadFile(pendingFile, formData.section);
-          if (uploadedUrl) {
-            finalMediaUrl = uploadedUrl;
-          }
-          setPendingFile(null);
-          if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-            setPreviewUrl("");
-          }
-        } catch (err) {
-          console.error("Upload failed during save:", err);
-          return alert("Upload failed. Please try again.");
-        } finally {
-          setFileUploading(false);
-        }
-      }
-
-      if (formData.section === 'header-logo') {
-        if (!finalMediaUrl) return alert('Please select or upload an image to use as the header logo');
-        setBrandingSaving(true);
-        try {
-          const payload = { logoUrl: finalMediaUrl };
-          console.log('Saving payload:', payload);
-          const result = await apiSaveLogo(finalMediaUrl);
-          console.log('Save response:', result);
-          setCurrentLogoUrl(finalMediaUrl);
-          window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: { logoUrl: finalMediaUrl } }));
-          setFilterPage('settings');
-          setFilterSection('header-logo');
-          await loadContent();
-          alert('Header logo updated successfully');
-          setEditingId(null);
-          setFormData({ section: `${filterPage}-hero`, title: "", body: "", mediaUrl: "", order: 0 });
-          await loadMedia();
-        } catch (err) {
-          console.error('Save failed:', err);
-          alert(err.message || 'Save failed');
-        } finally {
-          setBrandingSaving(false);
-        }
+      if (!contentForm.title || !contentForm.section) {
+        setErrorMsg("Title and section are required");
         return;
       }
-
-      const payload = {
-        id: editingId,
-        section: formData.section,
-        title: formData.title,
-        body: formData.body,
-        mediaUrl: finalMediaUrl,
-        order: Number(formData.order) || 0,
-      };
-
-      try {
-        console.log('Saving payload:', payload);
-        const result = await apiSaveContent(payload);
-        console.log('Save response:', result);
-
-        const pageKey = (payload.section || '').split('-')[0] || filterPage;
-        setFilterPage(pageKey);
-        setFilterSection(payload.section);
-
-        await loadContent();
-
-        alert('Content saved successfully');
-
-        setEditingId(null);
-        setFormData({ section: payload.section, title: "", body: "", mediaUrl: "", order: 0 });
-      } catch (err) {
-        console.error('Save failed:', err);
-        alert(err.message || 'Save failed');
-      }
+      setIsLoading(true);
+      await saveContent(contentForm);
+      setSuccessMsg("Content saved successfully");
+      setShowContentModal(false);
+      setContentForm({ section: "home-hero", title: "", body: "", mediaUrl: "", order: 0 });
+      setContentEditing(null);
+      await loadContent();
     } catch (err) {
-      console.error('Save failed:', err);
-      alert(err.message || 'Save failed');
+      setErrorMsg("Failed to save content: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this?")) return;
+  const handleContentDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this content?")) return;
     try {
-      try {
-        await apiDeleteContent(id);
-        loadContent();
-      } catch (err) {
-        console.error(err);
-        alert(err.message || "Delete failed");
-      }
+      setIsLoading(true);
+      await deleteContent(id);
+      setSuccessMsg("Content deleted successfully");
+      await loadContent();
     } catch (err) {
-      console.error("Error deleting content:", err);
-      alert("Delete failed");
+      setErrorMsg("Failed to delete content: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const openContentEditor = (item = null) => {
+    if (item) {
+      setContentForm(item);
+      setContentEditing(item._id);
+    } else {
+      setContentForm({ section: "home-hero", title: "", body: "", mediaUrl: "", order: 0 });
+      setContentEditing(null);
+    }
+    setShowContentModal(true);
+  };
+
+  // ==================== PRODUCT FUNCTIONS ====================
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchAllProducts();
+      setProductList(data || []);
+    } catch (err) {
+      setErrorMsg("Failed to load products: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadProductCategories = async () => {
+    try {
+      const data = await fetchProductCategories();
+      setProductCategories(data || []);
+    } catch (err) {
+      console.warn("Failed to load product categories:", err);
+    }
+  };
+
+  const handleProductSave = async () => {
+    try {
+      if (!productForm.name || !productForm.category) {
+        setErrorMsg("Name and category are required");
+        return;
+      }
+      setIsLoading(true);
+      if (productEditing) {
+        await updateProduct(productEditing, productForm);
+      } else {
+        await createProduct(productForm);
+      }
+      setSuccessMsg("Product saved successfully");
+      setShowProductModal(false);
+      setProductForm({ name: "", slug: "", description: "", shortDescription: "", category: "", price: 0, image: "", featured: false, order: 0 });
+      setProductEditing(null);
+      await loadProducts();
+    } catch (err) {
+      setErrorMsg("Failed to save product: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleProductDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      setIsLoading(true);
+      await deleteProduct(id);
+      setSuccessMsg("Product deleted successfully");
+      await loadProducts();
+    } catch (err) {
+      setErrorMsg("Failed to delete product: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openProductEditor = (item = null) => {
+    if (item) {
+      setProductForm(item);
+      setProductEditing(item._id);
+    } else {
+      setProductForm({ name: "", slug: "", description: "", shortDescription: "", category: "", price: 0, image: "", featured: false, order: 0 });
+      setProductEditing(null);
+    }
+    setShowProductModal(true);
+  };
+
+  // Product Category Functions
+  const handleProductCategorySave = async () => {
+    try {
+      if (!productCategoryForm.name || !productCategoryForm.slug) {
+        setErrorMsg("Name and slug are required");
+        return;
+      }
+      setIsLoading(true);
+      if (productCategoryEditing) {
+        await updateProductCategory(productCategoryEditing, productCategoryForm);
+      } else {
+        await createProductCategory(productCategoryForm);
+      }
+      setSuccessMsg("Product category saved successfully");
+      setShowProductCategoryModal(false);
+      setProductCategoryForm({ name: "", slug: "", description: "", color: "#3498db", order: 0 });
+      setProductCategoryEditing(null);
+      await loadProductCategories();
+    } catch (err) {
+      setErrorMsg("Failed to save product category: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleProductCategoryDelete = async (id) => {
+    if (!confirm("Are you sure? This cannot be undone if products are assigned.")) return;
+    try {
+      setIsLoading(true);
+      await deleteProductCategory(id);
+      setSuccessMsg("Product category deleted successfully");
+      await loadProductCategories();
+      await loadProducts();
+    } catch (err) {
+      setErrorMsg("Failed to delete product category: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openProductCategoryEditor = (item = null) => {
+    if (item) {
+      setProductCategoryForm(item);
+      setProductCategoryEditing(item._id);
+    } else {
+      setProductCategoryForm({ name: "", slug: "", description: "", color: "#3498db", order: 0 });
+      setProductCategoryEditing(null);
+    }
+    setShowProductCategoryModal(true);
+  };
+
+  // ==================== SERVICE FUNCTIONS ====================
+  const loadServices = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchAllServices();
+      setServiceList(data || []);
+    } catch (err) {
+      setErrorMsg("Failed to load services: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadServiceCategories = async () => {
+    try {
+      const data = await fetchServiceCategories();
+      setServiceCategories(data || []);
+    } catch (err) {
+      console.warn("Failed to load service categories:", err);
+    }
+  };
+
+  const handleServiceSave = async () => {
+    try {
+      if (!serviceForm.name || !serviceForm.category) {
+        setErrorMsg("Name and category are required");
+        return;
+      }
+      setIsLoading(true);
+      if (serviceEditing) {
+        await updateService(serviceEditing, serviceForm);
+      } else {
+        await createService(serviceForm);
+      }
+      setSuccessMsg("Service saved successfully");
+      setShowServiceModal(false);
+      setServiceForm({ name: "", slug: "", title: "", description: "", shortDescription: "", category: "", image: "", featured: false, order: 0, icon: "" });
+      setServiceEditing(null);
+      await loadServices();
+    } catch (err) {
+      setErrorMsg("Failed to save service: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleServiceDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this service?")) return;
+    try {
+      setIsLoading(true);
+      await deleteService(id);
+      setSuccessMsg("Service deleted successfully");
+      await loadServices();
+    } catch (err) {
+      setErrorMsg("Failed to delete service: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openServiceEditor = (item = null) => {
+    if (item) {
+      setServiceForm(item);
+      setServiceEditing(item._id);
+    } else {
+      setServiceForm({ name: "", slug: "", title: "", description: "", shortDescription: "", category: "", image: "", featured: false, order: 0, icon: "" });
+      setServiceEditing(null);
+    }
+    setShowServiceModal(true);
+  };
+
+  // Service Category Functions
+  const handleServiceCategorySave = async () => {
+    try {
+      if (!serviceCategoryForm.name || !serviceCategoryForm.slug) {
+        setErrorMsg("Name and slug are required");
+        return;
+      }
+      setIsLoading(true);
+      if (serviceCategoryEditing) {
+        await updateServiceCategory(serviceCategoryEditing, serviceCategoryForm);
+      } else {
+        await createServiceCategory(serviceCategoryForm);
+      }
+      setSuccessMsg("Service category saved successfully");
+      setShowServiceCategoryModal(false);
+      setServiceCategoryForm({ name: "", slug: "", description: "", color: "#3498db", order: 0 });
+      setServiceCategoryEditing(null);
+      await loadServiceCategories();
+    } catch (err) {
+      setErrorMsg("Failed to save service category: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleServiceCategoryDelete = async (id) => {
+    if (!confirm("Are you sure? This cannot be undone if services are assigned.")) return;
+    try {
+      setIsLoading(true);
+      await deleteServiceCategory(id);
+      setSuccessMsg("Service category deleted successfully");
+      await loadServiceCategories();
+      await loadServices();
+    } catch (err) {
+      setErrorMsg("Failed to delete service category: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openServiceCategoryEditor = (item = null) => {
+    if (item) {
+      setServiceCategoryForm(item);
+      setServiceCategoryEditing(item._id);
+    } else {
+      setServiceCategoryForm({ name: "", slug: "", description: "", color: "#3498db", order: 0 });
+      setServiceCategoryEditing(null);
+    }
+    setShowServiceCategoryModal(true);
   };
 
   const handleLogout = () => {
@@ -308,223 +438,530 @@ export default function AdminDashboard() {
     navigate("/admin");
   };
 
-  const currentPage = pages.find((p) => p.key === filterPage) || pages[0];
-  const availableSections = currentPage.sections || [];
-  const effectiveSection = filterSection || availableSections[0];
+  const clearMessages = () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+  };
 
-  const filtered = content
-    .filter((c) => c.section && c.section.startsWith(filterPage))
-    .filter((c) => (filterSection ? c.section === filterSection : true))
-    .sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(b.createdAt) - new Date(a.createdAt));
+
 
   return (
-    <div className="admin-dashboard">
-      <div className="admin-header">
-        <h1>Content Management Dashboard</h1>
-        <div className="admin-header-right">
-          <span>Logged in as: {adminUsername}</span>
-          <button onClick={handleLogout} className="btn btn-outline">
-            Logout
-          </button>
+    <div className="admin-dashboard-new">
+      {/* HEADER */}
+      <header className="admin-header-new">
+        <div className="admin-header-content">
+          <h1>Admin Management System</h1>
+          <div className="admin-user-info">
+            <span>Welcome, {adminUsername}</span>
+            <button onClick={handleLogout} className="btn btn-logout">Logout</button>
+          </div>
         </div>
+      </header>
+
+      {/* MESSAGES */}
+      {errorMsg && (
+        <div className="admin-alert admin-alert-error">
+          {errorMsg}
+          <button onClick={clearMessages} className="alert-close">×</button>
+        </div>
+      )}
+      {successMsg && (
+        <div className="admin-alert admin-alert-success">
+          {successMsg}
+          <button onClick={clearMessages} className="alert-close">×</button>
+        </div>
+      )}
+
+      {/* TAB NAVIGATION */}
+      <div className="admin-tabs">
+        <button
+          className={`tab-btn ${activeTab === "content" ? "active" : ""}`}
+          onClick={() => { setActiveTab("content"); clearMessages(); }}
+        >
+          📝 Content
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "products" ? "active" : ""}`}
+          onClick={() => { setActiveTab("products"); clearMessages(); }}
+        >
+          📦 Products
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "services" ? "active" : ""}`}
+          onClick={() => { setActiveTab("services"); clearMessages(); }}
+        >
+          🔧 Services
+        </button>
       </div>
 
-      <div className="admin-controls">
-        <div className="controls-header">
-          <h3>Page / Section</h3>
-        </div>
-        <label>Page:</label>
-        <select value={filterPage} onChange={(e) => { setFilterPage(e.target.value); setFilterSection(""); }}>
-          {pages.map((p) => (
-            <option key={p.key} value={p.key}>{p.label}</option>
-          ))}
-        </select>
+      <div className="admin-container">
+        {/* CONTENT TAB */}
+        {activeTab === "content" && (
+          <div className="admin-tab-content">
+            <div className="admin-section-header">
+              <h2>Content Management</h2>
+              <button onClick={() => openContentEditor()} className="btn btn-primary">+ Add Content</button>
+            </div>
 
-        <label>Section:</label>
-        <select value={filterSection} onChange={(e) => setFilterSection(e.target.value)}>
-          <option value="">-- all --</option>
-          {availableSections.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+            {isLoading ? (
+              <p className="loading-text">Loading...</p>
+            ) : (
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Section</th>
+                      <th>Title</th>
+                      <th>Order</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contentList && contentList.map((item) => (
+                      <tr key={item._id}>
+                        <td>{item.section}</td>
+                        <td>{item.title || "—"}</td>
+                        <td>{item.order}</td>
+                        <td>
+                          <button onClick={() => openContentEditor(item)} className="btn-sm btn-edit">Edit</button>
+                          <button onClick={() => handleContentDelete(item._id)} className="btn-sm btn-delete">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(!contentList || contentList.length === 0) && <p className="empty-text">No content found</p>}
+              </div>
+            )}
 
-        <button className="btn" onClick={() => openCreate(effectiveSection)}>Create New in Section</button>
-      </div>
-
-      {loading ? (
-        <div className="admin-loading">Loading content...</div>
-      ) : (
-        <div className="admin-content">
-          <div className="content-wrap">
-            <div className="content-main">
-              <div className="content-list">
-                <div className="content-item content-form">
-                  <h3>{editingId ? "Edit Item" : "Create Item"}</h3>
-                  <div className="form-row">
-                    <label>Section</label>
-                    <select value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })}>
-                      {pages.flatMap(p => p.sections).map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+            {/* Content Modal */}
+            {showContentModal && (
+              <div className="modal-overlay" onClick={() => setShowContentModal(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>{contentEditing ? "Edit Content" : "Add Content"}</h3>
+                    <button onClick={() => setShowContentModal(false)} className="modal-close">×</button>
                   </div>
-                  <div className="form-row">
-                    <label>Order</label>
-                    <input type="number" value={formData.order} onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })} />
-                  </div>
-                  <div className="form-row">
-                    <label>Title</label>
-                    <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-                  </div>
-                  <div className="form-row">
-                    <label>Body</label>
-                    <textarea value={formData.body} onChange={(e) => setFormData({ ...formData, body: e.target.value })} />
-                  </div>
-                  <div className="form-row">
-                    <label>Media URL</label>
-                    <input type="text" value={formData.mediaUrl} onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })} placeholder="/uploads/filename.jpg or full URL" />
-                  </div>
-                  <div className="form-row">
-                    <label>Upload Image</label>
-                    <input type="file" accept="image/*" onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      if (!formData.section) return alert('Please select a section for this content before uploading');
-
-                      setPendingFile(file);
-
-                      if (previewUrl) {
-                        URL.revokeObjectURL(previewUrl);
-                      }
-                      const localUrl = URL.createObjectURL(file);
-                      setPreviewUrl(localUrl);
-                      setFormData({ ...formData, mediaUrl: localUrl });
-                    }} />
-                    {fileUploading && <span>Uploading...</span>}
-                    {pendingFile && !fileUploading && <span style={{ color: '#f59e0b' }}>📁 File ready - will upload on Save</span>}
-                  </div>
-                  {formData.section === 'header-logo' && (
-                    <div className="form-row">
-                      <label>Header Logo</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <div style={{ fontSize: 13, color: '#64748b' }}>Choose or upload an image and click Create to set the site header logo.</div>
-                        <input type="text" value={formData.mediaUrl} readOnly placeholder="Select or upload an image from the media library" />
-                        {formData.mediaUrl && (
-                          <img src={normalizeUrl(formData.mediaUrl)} alt="header-logo-preview" style={{ maxWidth: 260, maxHeight: 80 }} />
-                        )}
-                      </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Section:</label>
+                      <select value={contentForm.section} onChange={(e) => setContentForm({ ...contentForm, section: e.target.value })}>
+                        <option value="home-hero">Home Hero</option>
+                        <option value="home-about">Home About</option>
+                        <option value="home-projects">Home Projects</option>
+                        <option value="about-hero">About Hero</option>
+                        <option value="about-story">About Story</option>
+                      </select>
                     </div>
-                  )}
-                  {formData.mediaUrl && (
-                    <div className="form-row">
-                      <label>Preview</label>
-                      <img src={normalizeUrl(formData.mediaUrl)} alt="preview" style={{ maxWidth: 200 }} />
+                    <div className="form-group">
+                      <label>Title:</label>
+                      <input type="text" value={contentForm.title} onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })} />
                     </div>
-                  )}
-                  <div className="form-actions">
-                    <button onClick={handleSave} className="btn btn-primary">{editingId ? 'Save Changes' : 'Create'}</button>
-                    <button onClick={() => {
-                      setEditingId(null);
-                      setFormData({ section: `${filterPage}-hero`, title: '', body: '', mediaUrl: '', order: 0 });
-                      setPendingFile(null);
-                      if (previewUrl) {
-                        URL.revokeObjectURL(previewUrl);
-                        setPreviewUrl('');
-                      }
-                    }} className="btn btn-outline">Reset</button>
+                    <div className="form-group">
+                      <label>Body:</label>
+                      <textarea value={contentForm.body} onChange={(e) => setContentForm({ ...contentForm, body: e.target.value })} rows="4"></textarea>
+                    </div>
+                    <div className="form-group">
+                      <label>Media URL:</label>
+                      <input type="text" value={contentForm.mediaUrl} onChange={(e) => setContentForm({ ...contentForm, mediaUrl: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Order:</label>
+                      <input type="number" value={contentForm.order} onChange={(e) => setContentForm({ ...contentForm, order: Number(e.target.value) })} />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button onClick={() => setShowContentModal(false)} className="btn btn-secondary">Cancel</button>
+                    <button onClick={handleContentSave} className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </button>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
 
-                {filtered.map((item) => (
-                  <div key={item._id} className="content-item">
-                    <div className="content-preview">
-                      {item.mediaUrl && (<img src={normalizeUrl(item.mediaUrl)} alt={item.title} className="content-image" />)}
-                      <h3>{item.title || '(no title)'}</h3>
-                      <p><strong>Section:</strong> {item.section} <strong>Order:</strong> {item.order}</p>
-                      <p>{item.body}</p>
-                    </div>
-                    <div className="content-actions">
-                      <button onClick={() => handleEdit(item)} className="btn btn-primary">Edit</button>
-                      <button onClick={() => handleDelete(item._id)} className="btn btn-danger">Delete</button>
-                    </div>
-                  </div>
-                ))}
+        {/* PRODUCTS TAB */}
+        {activeTab === "products" && (
+          <div className="admin-tab-content">
+            {/* Product Categories Section */}
+            <div className="admin-section">
+              <div className="admin-section-header">
+                <h2>Product Categories</h2>
+                <button onClick={() => openProductCategoryEditor()} className="btn btn-primary">+ Add Category</button>
+              </div>
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Slug</th>
+                      <th>Color</th>
+                      <th>Order</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productCategories && productCategories.map((cat) => (
+                      <tr key={cat._id}>
+                        <td>{cat.name}</td>
+                        <td>{cat.slug}</td>
+                        <td><span className="color-swatch" style={{ backgroundColor: cat.color }}></span></td>
+                        <td>{cat.order}</td>
+                        <td>
+                          <button onClick={() => openProductCategoryEditor(cat)} className="btn-sm btn-edit">Edit</button>
+                          <button onClick={() => handleProductCategoryDelete(cat._id)} className="btn-sm btn-delete">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(!productCategories || productCategories.length === 0) && <p className="empty-text">No categories found</p>}
               </div>
             </div>
 
-            <aside className="media-library">
-              <div className="media-header">
-                <h3>Media Library</h3>
-                <div className="media-sub">Click an item to select it for the form</div>
+            {/* Products Section */}
+            <div className="admin-section">
+              <div className="admin-section-header">
+                <h2>Products</h2>
+                <button onClick={() => openProductEditor()} className="btn btn-primary">+ Add Product</button>
               </div>
-              <div className="branding-panel">
-                <h4>Site Branding</h4>
-                <div className="branding-preview">
-                  <div className="branding-label">Current Logo</div>
-                  {currentLogoUrl ? (
-                    <img src={normalizeUrl(currentLogoUrl)} alt="Current logo" style={{ maxWidth: '100%', maxHeight: 80 }} />
-                  ) : (
-                    <div className="media-empty">No logo set</div>
-                  )}
-                </div>
-
-                <div className="branding-select">
-                  <div className="branding-label">Selected Logo URL</div>
-                  <input type="text" value={selectedMediaUrl || ''} readOnly placeholder="Select an image from the media library" />
-                </div>
-
-                <div className="branding-actions">
-                  <button className="btn" onClick={() => { setSelectedMediaUrl(''); setFormData((f) => ({ ...f, mediaUrl: '' })); }}>Clear Selection</button>
-                  <button className="btn btn-primary" onClick={handleSaveLogo} disabled={!selectedMediaUrl}>{brandingSaving ? 'Saving...' : 'Save Logo'}</button>
-                </div>
-              </div>
-
-              <div className="media-controls">
-                <label className="media-upload-label">Upload New Logo</label>
-                <div style={{ display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <input type="file" accept="image/*" onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    setPendingFile(file);
-
-                    if (previewUrl) {
-                      URL.revokeObjectURL(previewUrl);
-                    }
-                    const localUrl = URL.createObjectURL(file);
-                    setPreviewUrl(localUrl);
-                    setSelectedMediaUrl(localUrl); // Show in Selected Logo URL field
-                  }} />
-                  {pendingFile && <span style={{ fontSize: '13px', color: '#f59e0b' }}>📁 {pendingFile.name} - will upload on "Save Logo"</span>}
-                  {previewUrl && (
-                    <img src={previewUrl} alt="Preview" style={{ maxWidth: 200, maxHeight: 100, border: '2px dashed #f59e0b', borderRadius: 4, padding: 4 }} />
-                  )}
-                </div>
-              </div>
-
-              {mediaLoading ? (
-                <div className="admin-loading">Loading media...</div>
-              ) : mediaList.length === 0 ? (
-                <div className="media-empty">No media uploaded yet</div>
+              {isLoading ? (
+                <p className="loading-text">Loading...</p>
               ) : (
-                <div className="media-grid">
-                  {mediaList.map((m) => {
-                    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(m.filename || '');
-                    return (
-                      <div key={m.filename} className={`media-item ${selectedMediaUrl === m.url ? 'selected' : ''}`} onClick={() => handleSelectMedia(m)}>
-                        {isImage ? (
-                          <img src={normalizeUrl(m.url)} alt={m.filename} />
-                        ) : (
-                          <div className="media-file">{m.filename}</div>
-                        )}
-                        <div className="media-name">{m.filename}</div>
-                      </div>
-                    );
-                  })}
+                <div className="admin-table-wrapper">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Featured</th>
+                        <th>Order</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productList && productList.map((prod) => (
+                        <tr key={prod._id}>
+                          <td>{prod.name}</td>
+                          <td>{prod.category?.name || "—"}</td>
+                          <td>{prod.featured ? "✓ Yes" : "No"}</td>
+                          <td>{prod.order}</td>
+                          <td>
+                            <button onClick={() => openProductEditor(prod)} className="btn-sm btn-edit">Edit</button>
+                            <button onClick={() => handleProductDelete(prod._id)} className="btn-sm btn-delete">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {(!productList || productList.length === 0) && <p className="empty-text">No products found</p>}
                 </div>
               )}
-            </aside>
+            </div>
+
+            {/* Product Category Modal */}
+            {showProductCategoryModal && (
+              <div className="modal-overlay" onClick={() => setShowProductCategoryModal(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>{productCategoryEditing ? "Edit Category" : "Add Category"}</h3>
+                    <button onClick={() => setShowProductCategoryModal(false)} className="modal-close">×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Name:</label>
+                      <input type="text" value={productCategoryForm.name} onChange={(e) => setProductCategoryForm({ ...productCategoryForm, name: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Slug:</label>
+                      <input type="text" value={productCategoryForm.slug} onChange={(e) => setProductCategoryForm({ ...productCategoryForm, slug: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Description:</label>
+                      <textarea value={productCategoryForm.description} onChange={(e) => setProductCategoryForm({ ...productCategoryForm, description: e.target.value })} rows="2"></textarea>
+                    </div>
+                    <div className="form-group">
+                      <label>Color:</label>
+                      <input type="color" value={productCategoryForm.color} onChange={(e) => setProductCategoryForm({ ...productCategoryForm, color: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Order:</label>
+                      <input type="number" value={productCategoryForm.order} onChange={(e) => setProductCategoryForm({ ...productCategoryForm, order: Number(e.target.value) })} />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button onClick={() => setShowProductCategoryModal(false)} className="btn btn-secondary">Cancel</button>
+                    <button onClick={handleProductCategorySave} className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Product Modal */}
+            {showProductModal && (
+              <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
+                <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>{productEditing ? "Edit Product" : "Add Product"}</h3>
+                    <button onClick={() => setShowProductModal(false)} className="modal-close">×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Name:</label>
+                      <input type="text" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Slug:</label>
+                      <input type="text" value={productForm.slug} onChange={(e) => setProductForm({ ...productForm, slug: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Category:</label>
+                      <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
+                        <option value="">-- Select Category --</option>
+                        {productCategories && productCategories.map((cat) => (
+                          <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label>Short Description:</label>
+                        <input type="text" value={productForm.shortDescription} onChange={(e) => setProductForm({ ...productForm, shortDescription: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label>Price:</label>
+                        <input type="number" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Description:</label>
+                      <textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} rows="3"></textarea>
+                    </div>
+                    <div className="form-group">
+                      <label>Image URL:</label>
+                      <input type="text" value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
+                    </div>
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label>Order:</label>
+                        <input type="number" value={productForm.order} onChange={(e) => setProductForm({ ...productForm, order: Number(e.target.value) })} />
+                      </div>
+                    </div>
+                    <div className="form-group-checks">
+                      <label>
+                        <input type="checkbox" checked={productForm.featured} onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })} />
+                        Featured on homepage
+                      </label>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button onClick={() => setShowProductModal(false)} className="btn btn-secondary">Cancel</button>
+                    <button onClick={handleProductSave} className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* SERVICES TAB */}
+        {activeTab === "services" && (
+          <div className="admin-tab-content">
+            {/* Service Categories Section */}
+            <div className="admin-section">
+              <div className="admin-section-header">
+                <h2>Service Categories</h2>
+                <button onClick={() => openServiceCategoryEditor()} className="btn btn-primary">+ Add Category</button>
+              </div>
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Slug</th>
+                      <th>Color</th>
+                      <th>Order</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {serviceCategories && serviceCategories.map((cat) => (
+                      <tr key={cat._id}>
+                        <td>{cat.name}</td>
+                        <td>{cat.slug}</td>
+                        <td><span className="color-swatch" style={{ backgroundColor: cat.color }}></span></td>
+                        <td>{cat.order}</td>
+                        <td>
+                          <button onClick={() => openServiceCategoryEditor(cat)} className="btn-sm btn-edit">Edit</button>
+                          <button onClick={() => handleServiceCategoryDelete(cat._id)} className="btn-sm btn-delete">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(!serviceCategories || serviceCategories.length === 0) && <p className="empty-text">No categories found</p>}
+              </div>
+            </div>
+
+            {/* Services Section */}
+            <div className="admin-section">
+              <div className="admin-section-header">
+                <h2>Services</h2>
+                <button onClick={() => openServiceEditor()} className="btn btn-primary">+ Add Service</button>
+              </div>
+              {isLoading ? (
+                <p className="loading-text">Loading...</p>
+              ) : (
+                <div className="admin-table-wrapper">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Featured</th>
+                        <th>Order</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {serviceList && serviceList.map((svc) => (
+                        <tr key={svc._id}>
+                          <td>{svc.name}</td>
+                          <td>{svc.category?.name || "—"}</td>
+                          <td>{svc.featured ? "✓ Yes" : "No"}</td>
+                          <td>{svc.order}</td>
+                          <td>
+                            <button onClick={() => openServiceEditor(svc)} className="btn-sm btn-edit">Edit</button>
+                            <button onClick={() => handleServiceDelete(svc._id)} className="btn-sm btn-delete">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {(!serviceList || serviceList.length === 0) && <p className="empty-text">No services found</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Service Category Modal */}
+            {showServiceCategoryModal && (
+              <div className="modal-overlay" onClick={() => setShowServiceCategoryModal(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>{serviceCategoryEditing ? "Edit Category" : "Add Category"}</h3>
+                    <button onClick={() => setShowServiceCategoryModal(false)} className="modal-close">×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Name:</label>
+                      <input type="text" value={serviceCategoryForm.name} onChange={(e) => setServiceCategoryForm({ ...serviceCategoryForm, name: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Slug:</label>
+                      <input type="text" value={serviceCategoryForm.slug} onChange={(e) => setServiceCategoryForm({ ...serviceCategoryForm, slug: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Description:</label>
+                      <textarea value={serviceCategoryForm.description} onChange={(e) => setServiceCategoryForm({ ...serviceCategoryForm, description: e.target.value })} rows="2"></textarea>
+                    </div>
+                    <div className="form-group">
+                      <label>Color:</label>
+                      <input type="color" value={serviceCategoryForm.color} onChange={(e) => setServiceCategoryForm({ ...serviceCategoryForm, color: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Order:</label>
+                      <input type="number" value={serviceCategoryForm.order} onChange={(e) => setServiceCategoryForm({ ...serviceCategoryForm, order: Number(e.target.value) })} />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button onClick={() => setShowServiceCategoryModal(false)} className="btn btn-secondary">Cancel</button>
+                    <button onClick={handleServiceCategorySave} className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Service Modal */}
+            {showServiceModal && (
+              <div className="modal-overlay" onClick={() => setShowServiceModal(false)}>
+                <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>{serviceEditing ? "Edit Service" : "Add Service"}</h3>
+                    <button onClick={() => setShowServiceModal(false)} className="modal-close">×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Name:</label>
+                      <input type="text" value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Slug:</label>
+                      <input type="text" value={serviceForm.slug} onChange={(e) => setServiceForm({ ...serviceForm, slug: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Title:</label>
+                      <input type="text" value={serviceForm.title} onChange={(e) => setServiceForm({ ...serviceForm, title: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Category:</label>
+                      <select value={serviceForm.category} onChange={(e) => setServiceForm({ ...serviceForm, category: e.target.value })}>
+                        <option value="">-- Select Category --</option>
+                        {serviceCategories && serviceCategories.map((cat) => (
+                          <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Short Description:</label>
+                      <input type="text" value={serviceForm.shortDescription} onChange={(e) => setServiceForm({ ...serviceForm, shortDescription: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Description:</label>
+                      <textarea value={serviceForm.description} onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })} rows="3"></textarea>
+                    </div>
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label>Image URL:</label>
+                        <input type="text" value={serviceForm.image} onChange={(e) => setServiceForm({ ...serviceForm, image: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label>Icon URL:</label>
+                        <input type="text" value={serviceForm.icon} onChange={(e) => setServiceForm({ ...serviceForm, icon: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label>Order:</label>
+                        <input type="number" value={serviceForm.order} onChange={(e) => setServiceForm({ ...serviceForm, order: Number(e.target.value) })} />
+                      </div>
+                    </div>
+                    <div className="form-group-checks">
+                      <label>
+                        <input type="checkbox" checked={serviceForm.featured} onChange={(e) => setServiceForm({ ...serviceForm, featured: e.target.checked })} />
+                        Featured on homepage
+                      </label>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button onClick={() => setShowServiceModal(false)} className="btn btn-secondary">Cancel</button>
+                    <button onClick={handleServiceSave} className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

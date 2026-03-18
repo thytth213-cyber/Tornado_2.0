@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useScrollAnimation } from "../hooks/useScrollAnimation";
+import { fetchServices, fetchServicesByCategory, fetchServiceCategories } from "../api/servicesApi";
 import "../styles/services.css";
 
 export default function Services() {
-  const { serviceId } = useParams();
+  const { categorySlug } = useParams();
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Scroll animation refs
   const headerRef = useScrollAnimation({ threshold: 0.2 });
@@ -18,137 +21,54 @@ export default function Services() {
     const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
       || "http://localhost:5000";
 
-    // Default services data
-    const defaultServices = [
-      {
-        _id: 'turnkey-solutions',
-        title: 'Turnkey Solutions',
-        description: 'Complete end-to-end project delivery',
-        body: 'We provide comprehensive turnkey solutions where we handle every aspect of your project from planning to execution. Our team manages design, procurement, installation, and commissioning.',
-        image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80',
-        process: [
-          'Initial consultation and requirements analysis',
-          'Detailed project planning and timeline',
-          'Design and engineering',
-          'Component procurement',
-          'Installation and integration',
-          'Testing and commissioning',
-          'Staff training',
-          'Post-delivery support'
-        ]
-      },
-      {
-        _id: 'project-management',
-        title: 'Project Management',
-        description: 'Professional project oversight and coordination',
-        body: 'Our experienced project managers ensure your projects are completed on time, within budget, and to specification. We coordinate all stakeholders and manage resources efficiently.',
-        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
-        process: [
-          'Project scope definition',
-          'Resource planning',
-          'Schedule management',
-          'Budget control',
-          'Risk management',
-          'Quality assurance',
-          'Stakeholder communication',
-          'Progress reporting'
-        ]
-      },
-      {
-        _id: 'maintenance-support',
-        title: 'Maintenance Support / Service & Repair',
-        description: 'Ongoing maintenance and repair services',
-        body: 'Keep your equipment running smoothly with our comprehensive maintenance and repair services. We offer preventive maintenance programs and emergency repair support.',
-        image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80',
-        process: [
-          'Preventive maintenance schedules',
-          'Regular system inspections',
-          'Performance monitoring',
-          'Component replacement',
-          'Emergency repair response',
-          'Spare parts inventory',
-          'Service documentation',
-          'Performance optimization'
-        ]
-      },
-      {
-        _id: 'import-export',
-        title: 'Import & Export',
-        description: 'International trade and logistics services',
-        body: 'We handle all aspects of international import and export operations. Our expertise includes customs clearance, shipping coordination, and compliance management.',
-        image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80',
-        process: [
-          'Market analysis and sourcing',
-          'Supplier identification',
-          'Contract negotiation',
-          'Documentation preparation',
-          'Customs clearance',
-          'Shipping coordination',
-          'Quality inspection',
-          'Delivery management'
-        ]
-      },
-      {
-        _id: 'contract-management',
-        title: 'Contract Management',
-        description: 'Professional contract administration',
-        body: 'We provide comprehensive contract management services ensuring all agreements are properly executed and obligations are met. Our team handles negotiations, drafting, and compliance.',
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
-        process: [
-          'Contract review and analysis',
-          'Negotiation support',
-          'Document drafting',
-          'Legal compliance review',
-          'Performance monitoring',
-          'Dispute resolution',
-          'Record management',
-          'Renewal management'
-        ]
-      }
-    ];
+    const normalize = (item) => {
+      const raw = item.mediaUrl || item.image || "";
+      const final = raw && !/^https?:\/\//i.test(raw) ? `${API_URL}${raw}` : raw;
+      return Object.assign({}, item, { resolvedMediaUrl: final });
+    };
 
     (async () => {
-      const normalize = (item) => {
-        const raw = item.mediaUrl || item.image || "";
-        const final = raw && !/^https?:\/\//i.test(raw) ? `${API_URL}${raw}` : raw;
-        return Object.assign({}, item, { resolvedMediaUrl: final });
-      };
-
       try {
-        const { fetchContent } = await import("../api/contentApi");
-        const all = await fetchContent();
-        if (!mounted) return;
+        setIsLoading(true);
+        
+        // Fetch categories
+        const fetchedCategories = await fetchServiceCategories();
+        if (mounted && fetchedCategories && Array.isArray(fetchedCategories)) {
+          setCategories(fetchedCategories.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        }
 
-        const normalizedSection = (s) => (s || "").toString().trim().toLowerCase();
-        const servicesData = all.filter((c) => normalizedSection(c.section) === "services");
-
-        if (servicesData.length > 0) {
-          setServices(servicesData.map(normalize));
+        // Fetch services based on category or all services
+        let fetchedServices;
+        if (categorySlug) {
+          fetchedServices = await fetchServicesByCategory(categorySlug);
         } else {
-          setServices(defaultServices.map(normalize));
+          fetchedServices = await fetchServices();
+        }
+
+        if (mounted && fetchedServices && Array.isArray(fetchedServices)) {
+          setServices(fetchedServices.map(normalize));
         }
       } catch (err) {
         console.warn("Failed to load services:", err);
-        setServices(defaultServices.map(normalize));
+        setServices([]);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     })();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [categorySlug]);
 
-  // Set selected service based on URL param
+  // Set selected service to first service
   useEffect(() => {
     if (services.length > 0) {
-      if (serviceId) {
-        const service = services.find((s) => s._id === serviceId || s._id === serviceId.toLowerCase());
-        setSelectedService(service || services[0]);
-      } else {
-        setSelectedService(services[0]);
-      }
+      setSelectedService(services[0]);
+    } else {
+      setSelectedService(null);
     }
-  }, [services, serviceId]);
+  }, [services]);
 
   return (
     <main className="services-main">

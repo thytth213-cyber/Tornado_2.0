@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useScrollAnimation } from "../hooks/useScrollAnimation";
+import { fetchProducts, fetchProductsByCategory, fetchProductCategories } from "../api/productsApi";
 import "../styles/products.css";
 
 export default function Products() {
-  const { productId } = useParams();
+  const { categorySlug } = useParams();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Scroll animation refs
   const headerRef = useScrollAnimation({ threshold: 0.2 });
@@ -18,122 +21,54 @@ export default function Products() {
     const API_URL = (isProduction ? import.meta.env.VITE_API_URL_PRO : import.meta.env.VITE_API_URL)
       || "http://localhost:5000";
 
-    // Default products data
-    const defaultProducts = [
-      {
-        _id: 'industrial-machinery',
-        title: 'Industrial Machinery',
-        description: 'Advanced industrial machinery and equipment designed for manufacturing operations',
-        body: 'Our industrial machinery solutions are engineered for maximum efficiency and durability. We provide comprehensive support including installation, training, and maintenance services to ensure optimal performance.',
-        image: 'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&q=80',
-        features: [
-          'High-precision components',
-          'Automated operation',
-          'Energy-efficient design',
-          'Low maintenance requirements',
-          'Extended warranty coverage'
-        ]
-      },
-      {
-        _id: 'telecommunications',
-        title: 'Telecommunications Equipment',
-        description: 'Cutting-edge telecommunications infrastructure and networking solutions',
-        body: 'We specialize in state-of-the-art telecommunications equipment that enables seamless connectivity. Our products support high-speed data transmission and reliable network infrastructure.',
-        image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80',
-        features: [
-          'High-speed connectivity',
-          'Reliable infrastructure',
-          'Scalable solutions',
-          'Advanced security features',
-          'Global compatibility'
-        ]
-      },
-      {
-        _id: 'lightning-systems',
-        title: 'Lightning / Metrological Systems / Camera',
-        description: 'Comprehensive weather monitoring and surveillance systems',
-        body: 'Our advanced lightning detection and metrological systems provide real-time monitoring and data collection. Integrated with high-resolution camera systems for complete surveillance coverage.',
-        image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80',
-        features: [
-          'Real-time lightning detection',
-          'Weather monitoring',
-          '4K camera systems',
-          'Cloud integration',
-          'Mobile app support'
-        ]
-      },
-      {
-        _id: 'fire-fighting',
-        title: 'Fire Fighting Equipment',
-        description: 'Professional fire suppression and safety equipment',
-        body: 'We provide comprehensive fire fighting solutions including suppression systems, detection equipment, and emergency response tools. All products meet international safety standards.',
-        image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80',
-        features: [
-          'ISO certified',
-          'Quick response systems',
-          'Automatic detection',
-          'Maintenance services',
-          'Training programs'
-        ]
-      },
-      {
-        _id: 'it-hardware',
-        title: 'IT Hardware & Software & Other Equipment',
-        description: 'Complete IT solutions for enterprise and business operations',
-        body: 'From servers to workstations, we offer complete IT infrastructure solutions. Our products include hardware, software licenses, and comprehensive technical support.',
-        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
-        features: [
-          'Enterprise-grade servers',
-          'Software licensing',
-          'Cloud solutions',
-          'Technical support 24/7',
-          'Scalable infrastructure'
-        ]
-      }
-    ];
+    const normalize = (item) => {
+      const raw = item.mediaUrl || item.image || "";
+      const final = raw && !/^https?:\/\//i.test(raw) ? `${API_URL}${raw}` : raw;
+      return Object.assign({}, item, { resolvedMediaUrl: final });
+    };
 
     (async () => {
-      const normalize = (item) => {
-        const raw = item.mediaUrl || item.image || "";
-        const final = raw && !/^https?:\/\//i.test(raw) ? `${API_URL}${raw}` : raw;
-        return Object.assign({}, item, { resolvedMediaUrl: final });
-      };
-
       try {
-        const { fetchContent } = await import("../api/contentApi");
-        const all = await fetchContent();
-        if (!mounted) return;
+        setIsLoading(true);
+        
+        // Fetch categories
+        const fetchedCategories = await fetchProductCategories();
+        if (mounted && fetchedCategories && Array.isArray(fetchedCategories)) {
+          setCategories(fetchedCategories.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        }
 
-        const normalizedSection = (s) => (s || "").toString().trim().toLowerCase();
-        const productsData = all.filter((c) => normalizedSection(c.section) === "products");
-
-        if (productsData.length > 0) {
-          setProducts(productsData.map(normalize));
+        // Fetch products based on category or all products
+        let fetchedProducts;
+        if (categorySlug) {
+          fetchedProducts = await fetchProductsByCategory(categorySlug);
         } else {
-          setProducts(defaultProducts.map(normalize));
+          fetchedProducts = await fetchProducts();
+        }
+
+        if (mounted && fetchedProducts && Array.isArray(fetchedProducts)) {
+          setProducts(fetchedProducts.map(normalize));
         }
       } catch (err) {
         console.warn("Failed to load products:", err);
-        setProducts(defaultProducts.map(normalize));
+        setProducts([]);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     })();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [categorySlug]);
 
-  // Set selected product based on URL param
+  // Set selected product to first product
   useEffect(() => {
     if (products.length > 0) {
-      if (productId) {
-        const product = products.find((p) => p._id === productId || p._id === productId.toLowerCase());
-        setSelectedProduct(product || products[0]);
-      } else {
-        setSelectedProduct(products[0]);
-      }
+      setSelectedProduct(products[0]);
+    } else {
+      setSelectedProduct(null);
     }
-  }, [products, productId]);
+  }, [products]);
 
   return (
     <main className="products-main">
