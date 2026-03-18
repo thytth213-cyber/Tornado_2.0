@@ -16,6 +16,7 @@ export default function Home() {
   const [projectItems, setProjectItems] = useState([]);
   const [aboutItem, setAboutItem] = useState(null);
   const [activeService, setActiveService] = useState(0);
+  const [products, setProducts] = useState([]);
 
   // Scroll animation refs
   const aboutImgRef = useScrollAnimation({ threshold: 0.2 });
@@ -51,7 +52,7 @@ export default function Home() {
     : [];
 
   useEffect(() => {
-    // Fetch dynamic content (hero slides, projects) from the content API
+    // Fetch dynamic content (hero slides, projects, products) from the content API
     // so uploaded images saved in the admin panel appear on the home page.
     let mounted = true;
     const isProduction = import.meta.env.VITE_ENV === 'production';
@@ -60,6 +61,7 @@ export default function Home() {
     (async () => {
       try {
         const { fetchContent } = await import("../api/contentApi");
+        const { fetchFeaturedProducts } = await import("../api/productsApi");
         const all = await fetchContent();
         if (!mounted) return;
         // robust section matching: trim + lowercase to avoid casing/whitespace issues
@@ -78,9 +80,25 @@ export default function Home() {
           return Object.assign({}, item, { resolvedMediaUrl: final });
         };
 
-  setHeroSlides(heroes.map(normalize));
-  setProjectItems(projects.map(normalize));
-  setAboutItem(about ? normalize(about) : null);
+        setHeroSlides(heroes.map(normalize));
+        setProjectItems(projects.map(normalize));
+        setAboutItem(about ? normalize(about) : null);
+
+        // Fetch featured products
+        try {
+          const productsData = await fetchFeaturedProducts();
+          if (mounted) {
+            const normalizedProducts = productsData.map(product => ({
+              ...product,
+              resolvedImage: product.image && !/^https?:\/\//i.test(product.image) 
+                ? `${API_URL}${product.image}` 
+                : product.image
+            }));
+            setProducts(normalizedProducts);
+          }
+        } catch (err) {
+          console.warn("Failed to load products:", err);
+        }
       } catch (err) {
         console.warn("Failed to load home content:", err);
       }
@@ -216,7 +234,8 @@ export default function Home() {
     console.debug("Home content - heroSlides:", heroSlides);
     console.debug("Home content - projectItems:", projectItems);
     console.debug("Home content - aboutItem:", aboutItem);
-  }, [heroSlides, projectItems, aboutItem]);
+    console.debug("Home content - products:", products);
+  }, [heroSlides, projectItems, aboutItem, products]);
 
   // Stats count-up: animate numbers when the stats section scrolls into view
   useEffect(() => {
@@ -425,65 +444,91 @@ export default function Home() {
             <h2>Our Products</h2>
           </div>
           <div className="products-grid" ref={productsRef}>
-            <div className="product-box" data-stagger-child>
-              <div className="product-icon">
-                <img
-                  src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g552.svg"
-                  alt="Industrial Machinery"
-                  width="80"
-                  height="80"
-                />
-              </div>
-              <h3>Industrial Machinery</h3>
-            </div>
+            {products.length > 0 ? (
+              products.map((product) => (
+                <div key={product._id} className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    {product.resolvedImage ? (
+                      <img
+                        src={product.resolvedImage}
+                        alt={product.name}
+                        width="80"
+                        height="80"
+                      />
+                    ) : (
+                      <div className="product-placeholder" style={{ width: '80px', height: '80px', backgroundColor: '#e0e0e0' }} />
+                    )}
+                  </div>
+                  <h3>{product.name}</h3>
+                  {product.shortDescription && (
+                    <p className="product-description">{product.shortDescription}</p>
+                  )}
+                </div>
+              ))
+            ) : (
+              // Fallback to hardcoded products if no database products are loaded
+              <>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g552.svg"
+                      alt="Industrial Machinery"
+                      width="80"
+                      height="80"
+                    />
+                  </div>
+                  <h3>Industrial Machinery</h3>
+                </div>
 
-            <div className="product-box" data-stagger-child>
-              <div className="product-icon">
-                <img
-                  src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-22.svg"
-                  alt="Telecommunications Equipment"
-                  width="80"
-                  height="80"
-                />
-              </div>
-              <h3>Telecommunications Equipment</h3>
-            </div>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-22.svg"
+                      alt="Telecommunications Equipment"
+                      width="80"
+                      height="80"
+                    />
+                  </div>
+                  <h3>Telecommunications Equipment</h3>
+                </div>
 
-            <div className="product-box" data-stagger-child>
-              <div className="product-icon">
-                <img
-                  src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-52.svg"
-                  alt="Lightning Systems"
-                  width="80"
-                  height="80"
-                />
-              </div>
-              <h3>Lightning/ Metrological Systems/ Camera</h3>
-            </div>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-52.svg"
+                      alt="Lightning Systems"
+                      width="80"
+                      height="80"
+                    />
+                  </div>
+                  <h3>Lightning/ Metrological Systems/ Camera</h3>
+                </div>
 
-            <div className="product-box" data-stagger-child>
-              <div className="product-icon">
-                <img
-                  src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g2930.svg"
-                  alt="Fire Fighting Equipment"
-                  width="80"
-                  height="80"
-                />
-              </div>
-              <h3>Fire Fighting Equipment</h3>
-            </div>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g2930.svg"
+                      alt="Fire Fighting Equipment"
+                      width="80"
+                      height="80"
+                    />
+                  </div>
+                  <h3>Fire Fighting Equipment</h3>
+                </div>
 
-            <div className="product-box" data-stagger-child>
-              <div className="product-icon">
-                <img
-                  src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-25.svg"
-                  alt="IT Hardware"
-                  width="80"
-                  height="80"
-                />
-              </div>
-              <h3>IT Hardware & Software & Other Equipment</h3>
-            </div>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-25.svg"
+                      alt="IT Hardware"
+                      width="80"
+                      height="80"
+                    />
+                  </div>
+                  <h3>IT Hardware & Software & Other Equipment</h3>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
