@@ -2,71 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/header.css';
 import { getLogo as apiGetLogo } from '../api/settingsApi';
-
-const MENU_CONFIG = [
-  { id: 'home', label: 'HOME', href: '/', hasSubmenu: false },
-  { id: 'about', label: 'ABOUT US', href: '/about', hasSubmenu: false },
-  {
-    id: 'products',
-    label: 'PRODUCTS',
-    href: '/products',
-    hasSubmenu: true,
-    submenuItems: [
-      {
-        id: 'industrial-machinery',
-        label: 'Industrial Machinery',
-        href: '/products/industrial-machinery',
-      },
-      {
-        id: 'telecommunications',
-        label: 'Telecommunications Equipment',
-        href: '/products/telecommunications',
-      },
-      {
-        id: 'lighting-systems',
-        label: 'Lightning/Metrological Systems/Camera',
-        href: '/products/lightning-systems',
-      },
-      { id: 'fire-fighting', label: 'Fire Fighting Equipment', href: '/products/fire-fighting' },
-      {
-        id: 'it-hardware',
-        label: 'IT Hardware & Software & Other Equipment',
-        href: '/products/it-hardware',
-      },
-    ],
-  },
-  {
-    id: 'services',
-    label: 'SERVICES',
-    href: '/services',
-    hasSubmenu: true,
-    submenuItems: [
-      { id: 'turnkey-solutions', label: 'Turnkey Solutions', href: '/services/turnkey-solutions' },
-      {
-        id: 'project-management',
-        label: 'Project Management',
-        href: '/services/project-management',
-      },
-      {
-        id: 'maintenance-support',
-        label: 'Maintenance Support/Service & Repair/Others',
-        href: '/services/maintenance-support',
-      },
-      { id: 'import-export', label: 'Import & Export', href: '/services/import-export' },
-      {
-        id: 'contract-management',
-        label: 'Contract Management',
-        href: '/services/contract-management',
-      },
-    ],
-  },
-  { id: 'partners', label: 'PARTNERS', href: '/partners', hasSubmenu: false },
-  { id: 'contact', label: 'CONTACT US', href: '/contact-us', hasSubmenu: false },
-];
+import { fetchProductCategories } from '../api/productsApi';
+import { fetchServiceCategories } from '../api/servicesApi';
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
+  const [productCategories, setProductCategories] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({
     products: false,
     services: false,
@@ -102,7 +45,7 @@ export default function Header() {
     };
   }, []);
 
-  // fetch logo from backend settings on mount
+  // Fetch logo from backend settings on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -134,6 +77,43 @@ export default function Header() {
     return () => {
       mounted = false;
       window.removeEventListener('siteLogoUpdated', onUpdate);
+    };
+  }, []);
+
+  // Fetch product and service categories from APIs
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const categories = await fetchProductCategories();
+        if (mounted && categories && Array.isArray(categories)) {
+          setProductCategories(categories.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        }
+      } catch (err) {
+        console.warn('Could not fetch product categories', err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const categories = await fetchServiceCategories();
+        if (mounted && categories && Array.isArray(categories)) {
+          setServiceCategories(categories.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        }
+      } catch (err) {
+        console.warn('Could not fetch service categories', err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
     };
   }, []);
 
@@ -223,13 +203,11 @@ export default function Header() {
                     </span>
                   </Link>
                   <div className="dropdown-menu">
-                    <Link to="/products/industrial-machinery">Industrial Machinery</Link>
-                    <Link to="/products/telecommunications">Telecommunications Equipment</Link>
-                    <Link to="/products/lightning-systems">
-                      Lightning/Metrological Systems/Camera
-                    </Link>
-                    <Link to="/products/fire-fighting">Fire Fighting Equipment</Link>
-                    <Link to="/products/it-hardware">IT Hardware & Software & Other Equipment</Link>
+                    {productCategories.map((cat) => (
+                      <Link key={cat._id} to={`/products/category/${cat.slug}`}>
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
                 </div>
 
@@ -259,13 +237,11 @@ export default function Header() {
                     </span>
                   </Link>
                   <div className="dropdown-menu">
-                    <Link to="/services/turnkey-solutions">Turnkey Solutions</Link>
-                    <Link to="/services/project-management">Project Management</Link>
-                    <Link to="/services/maintenance-support">
-                      Maintenance Support/Service & Repair/Others
-                    </Link>
-                    <Link to="/services/import-export">Import & Export</Link>
-                    <Link to="/services/contract-management">Contract Management</Link>
+                    {serviceCategories.map((cat) => (
+                      <Link key={cat._id} to={`/services/category/${cat.slug}`}>
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
                 </div>
 
@@ -316,77 +292,139 @@ export default function Header() {
           {mobileOpen && (
             <div className="mobile-panel">
               <nav className="mnav" aria-label="Mobile navigation">
-                {MENU_CONFIG.map(menuItem => (
-                  <div key={menuItem.id} className="mobile-menu-item">
-                    {!menuItem.hasSubmenu ? (
-                      menuItem.href.startsWith('#') ? (
-                        <a
-                          href={menuItem.href}
-                          className="mobile-nav-link"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          {menuItem.label}
-                        </a>
-                      ) : (
+                {/* HOME */}
+                <div className="mobile-menu-item">
+                  <Link
+                    to="/"
+                    className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    HOME
+                  </Link>
+                </div>
+
+                {/* ABOUT US */}
+                <div className="mobile-menu-item">
+                  <Link
+                    to="/about"
+                    className={`mobile-nav-link ${isActive('/about') ? 'active' : ''}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    ABOUT US
+                  </Link>
+                </div>
+
+                {/* PRODUCTS with submenu */}
+                <div className="mobile-menu-item">
+                  <button
+                    className={`mobile-nav-link mobile-nav-toggle ${
+                      expandedMenus.products ? 'expanded' : ''
+                    }`}
+                    onClick={() => toggleMenu('products')}
+                    aria-expanded={expandedMenus.products}
+                    aria-controls="submenu-products"
+                  >
+                    <span>PRODUCTS</span>
+                    <span className="mobile-chevron">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20px"
+                        height="20px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="M7 10L12 15L17 10"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                  {expandedMenus.products && (
+                    <div id="submenu-products" className="mobile-submenu" role="region">
+                      {productCategories.map((cat) => (
                         <Link
-                          to={menuItem.href}
-                          className={`mobile-nav-link ${isActive(menuItem.href) ? 'active' : ''}`}
+                          key={cat._id}
+                          to={`/products/category/${cat.slug}`}
+                          className="mobile-submenu-link"
                           onClick={() => setMobileOpen(false)}
                         >
-                          {menuItem.label}
+                          {cat.name}
                         </Link>
-                      )
-                    ) : (
-                      <>
-                        <button
-                          className={`mobile-nav-link mobile-nav-toggle ${
-                            expandedMenus[menuItem.id] ? 'expanded' : ''
-                          }`}
-                          onClick={() => toggleMenu(menuItem.id)}
-                          aria-expanded={expandedMenus[menuItem.id]}
-                          aria-controls={`submenu-${menuItem.id}`}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* SERVICES with submenu */}
+                <div className="mobile-menu-item">
+                  <button
+                    className={`mobile-nav-link mobile-nav-toggle ${
+                      expandedMenus.services ? 'expanded' : ''
+                    }`}
+                    onClick={() => toggleMenu('services')}
+                    aria-expanded={expandedMenus.services}
+                    aria-controls="submenu-services"
+                  >
+                    <span>SERVICES</span>
+                    <span className="mobile-chevron">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20px"
+                        height="20px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="M7 10L12 15L17 10"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                  {expandedMenus.services && (
+                    <div id="submenu-services" className="mobile-submenu" role="region">
+                      {serviceCategories.map((cat) => (
+                        <Link
+                          key={cat._id}
+                          to={`/services/category/${cat.slug}`}
+                          className="mobile-submenu-link"
+                          onClick={() => setMobileOpen(false)}
                         >
-                          <span>{menuItem.label}</span>
-                          <span className="mobile-chevron">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20px"
-                              height="20px"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <path
-                                d="M7 10L12 15L17 10"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                        </button>
-                        {expandedMenus[menuItem.id] && (
-                          <div
-                            id={`submenu-${menuItem.id}`}
-                            className="mobile-submenu"
-                            role="region"
-                          >
-                            {menuItem.submenuItems.map(subItem => (
-                              <Link
-                                key={subItem.id}
-                                to={subItem.href}
-                                className="mobile-submenu-link"
-                                onClick={() => setMobileOpen(false)}
-                              >
-                                {subItem.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
+                          {cat.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* PARTNERS */}
+                <div className="mobile-menu-item">
+                  <Link
+                    to="/partners"
+                    className={`mobile-nav-link ${isActive('/partners') ? 'active' : ''}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    PARTNERS
+                  </Link>
+                </div>
+
+                {/* CONTACT US */}
+                <div className="mobile-menu-item">
+                  <Link
+                    to="/contact-us"
+                    className={`mobile-nav-link ${isActive('/contact-us') ? 'active' : ''}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    CONTACT US
+                  </Link>
+                </div>
               </nav>
             </div>
           )}
