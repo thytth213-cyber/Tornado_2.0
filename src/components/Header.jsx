@@ -162,7 +162,7 @@ export default function Header() {
               <Link to="/" className="brand" aria-label="Tornado Home">
                 <img
                   className="brand-logo"
-                  src={ '/logo/LOGO-TORNADO.svg'}
+                  src={ '/logo/LOGO-TORNADO1.svg'}
                   alt="Tornado"
                 />
               </Link>
