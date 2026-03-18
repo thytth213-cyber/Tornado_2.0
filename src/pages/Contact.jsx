@@ -82,7 +82,7 @@ export default function Contact() {
                   </div>
                   <div className="info-content">
                     <h4>Address</h4>
-                    <p>Room 1702, Sino Centre, 582-592 Nathan Rd., Mongkok, Kowloon<br />Hongkong</p>
+                    <p>Room 1702, Sino Centre, 582-592 Nathan Rd., Mongkok, Kowloon Hongkong</p>
                   </div>
                 </div>
 
