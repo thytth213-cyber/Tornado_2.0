@@ -179,7 +179,7 @@ export default function About() {
               </div>
               <div className="timeline-content">
                 <h4>Founded</h4>
-                <p className="timeline-year">2012</p>
+                <p className="timeline-year">2015</p>
                 <p>
                   Started with a vision to revolutionize the technology consulting space, our
                   founders brought together world-class talent to solve complex business challenges.

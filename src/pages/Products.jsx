@@ -99,8 +99,8 @@ export default function Products() {
                     className={`product-item ${selectedProduct?._id === product._id ? 'active' : ''}`}
                     onClick={() => setSelectedProduct(product)}
                   >
-                    <h3>{product.title}</h3>
-                    <p>{product.description}</p>
+                    <h3>{product.name}</h3>
+                    <p>{product.shortDescription}</p>
                     <span className="arrow">→</span>
                   </button>
                 ))}
@@ -113,23 +113,22 @@ export default function Products() {
                 <div className="product-image">
                   <img
                     src={selectedProduct.resolvedMediaUrl || selectedProduct.image}
-                    alt={selectedProduct.title}
+                    alt={selectedProduct.name}
                   />
                 </div>
                 <div className="product-info">
-                  <h2>{selectedProduct.title}</h2>
-                  <p className="description">{selectedProduct.body}</p>
+                  <h2>{selectedProduct.name}</h2>
+                  {selectedProduct.shortDescription && (
+                    <p className="short-description">{selectedProduct.shortDescription}</p>
+                  )}
 
                   <div className="features">
                     <h3>Key Features</h3>
-                    <ul>
-                      {(selectedProduct.features || []).map((feature, idx) => (
-                        <li key={idx}>
-                          <i className="fa-solid fa-check"></i>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                    {selectedProduct.description && (
+                      <div className="description-content">
+                        {selectedProduct.description}
+                      </div>
+                    )}
                   </div>
 
                   <div className="cta">

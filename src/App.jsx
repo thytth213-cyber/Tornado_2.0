@@ -69,7 +69,7 @@ export default function App() {
         />
 
         <Route
-          path="/products/:productId"
+          path="/products/category/:categorySlug"
           element={
             <>
               <Header />
@@ -91,7 +91,7 @@ export default function App() {
         />
 
         <Route
-          path="/services/:serviceId"
+          path="/services/category/:categorySlug"
           element={
             <>
               <Header />

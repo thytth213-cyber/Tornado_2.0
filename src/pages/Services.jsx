@@ -99,8 +99,8 @@ export default function Services() {
                     className={`service-item ${selectedService?._id === service._id ? 'active' : ''}`}
                     onClick={() => setSelectedService(service)}
                   >
-                    <h3>{service.title}</h3>
-                    <p>{service.description}</p>
+                    <h3>{service.name}</h3>
+                    <p>{service.shortDescription}</p>
                     <span className="arrow">→</span>
                   </button>
                 ))}
@@ -113,23 +113,22 @@ export default function Services() {
                 <div className="service-image">
                   <img
                     src={selectedService.resolvedMediaUrl || selectedService.image}
-                    alt={selectedService.title}
+                    alt={selectedService.name}
                   />
                 </div>
                 <div className="service-info">
-                  <h2>{selectedService.title}</h2>
-                  <p className="description">{selectedService.body}</p>
+                  <h2>{selectedService.name}</h2>
+                  {selectedService.shortDescription && (
+                    <p className="short-description">{selectedService.shortDescription}</p>
+                  )}
 
                   <div className="process">
                     <h3>Our Process</h3>
-                    <ol>
-                      {(selectedService.process || []).map((step, idx) => (
-                        <li key={idx}>
-                          <span className="step-number">{idx + 1}</span>
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
+                    {selectedService.description && (
+                      <div className="description-content">
+                        {selectedService.description}
+                      </div>
+                    )}
                   </div>
 
                   <div className="cta">
