@@ -710,7 +710,7 @@ footer a {
 .product-box {
   background: #fff;
   border: 1px solid #d1d5db;
-  padding: 40px 30px;
+  padding: 10px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -790,7 +790,7 @@ footer a {
 }
 
 .product-icon img {
-  width: 200px;
+  width: 260px;
   height: 200px;
   object-fit: contain;
   transition: filter 0.4s ease;
