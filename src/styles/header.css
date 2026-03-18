@@ -26,23 +26,15 @@
 
 /* ===== HEADER full width ===== */
 header.site-header{
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1200;
+  position: static;
   width:100%;
-  background: transparent;
-  border-bottom: 1px solid rgba(255,255,255,.15);
-  backdrop-filter: blur(8px);
+  background: rgba(7, 17, 41, 0.98);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 4px 24px rgba(2,6,23,0.15);
   transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.3s ease,
     background 0.3s ease,
     border-color 0.3s ease,
-    backdrop-filter 0.3s ease;
-  transform: translateY(0);
-  animation: slideDownHeader 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideDownHeader {
