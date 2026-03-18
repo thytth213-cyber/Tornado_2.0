@@ -366,7 +366,7 @@ export default function Home() {
               </p>
               <p>
                 Our expertise has fuelled our global expansion. Today, we serve clients around the
-                world, building upon our established presence in Hong Kong and the region. We've
+                world, building upon our established presence in Singapore and the region. We've
                 enriched our service portfolio and product range to deliver cutting-edge solutions
                 that meet the complex needs of our diverse clientele.
               </p>
@@ -452,16 +452,19 @@ export default function Home() {
                       <img
                         src={product.resolvedImage}
                         alt={product.name}
-                        width="80"
-                        height="80"
+                        width="200"
+                        height="200"
                       />
                     ) : (
-                      <div className="product-placeholder" style={{ width: '80px', height: '80px', backgroundColor: '#e0e0e0' }} />
+                      <div className="product-placeholder" style={{ width: '200px', height: '200px', backgroundColor: '#e0e0e0' }} />
                     )}
                   </div>
                   <h3>{product.name}</h3>
                   {product.shortDescription && (
                     <p className="product-description">{product.shortDescription}</p>
+                  )}
+                  {!product.shortDescription && product.description && (
+                    <p className="product-description">{product.description}</p>
                   )}
                 </div>
               ))
@@ -473,8 +476,8 @@ export default function Home() {
                     <img
                       src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g552.svg"
                       alt="Industrial Machinery"
-                      width="80"
-                      height="80"
+                      width="200"
+                      height="200"
                     />
                   </div>
                   <h3>Industrial Machinery</h3>
@@ -485,8 +488,8 @@ export default function Home() {
                     <img
                       src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-22.svg"
                       alt="Telecommunications Equipment"
-                      width="80"
-                      height="80"
+                      width="200"
+                      height="200"
                     />
                   </div>
                   <h3>Telecommunications Equipment</h3>
@@ -497,8 +500,8 @@ export default function Home() {
                     <img
                       src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-52.svg"
                       alt="Lightning Systems"
-                      width="80"
-                      height="80"
+                      width="200"
+                      height="200"
                     />
                   </div>
                   <h3>Lightning/ Metrological Systems/ Camera</h3>
@@ -509,8 +512,8 @@ export default function Home() {
                     <img
                       src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g2930.svg"
                       alt="Fire Fighting Equipment"
-                      width="80"
-                      height="80"
+                      width="200"
+                      height="200"
                     />
                   </div>
                   <h3>Fire Fighting Equipment</h3>
@@ -521,8 +524,8 @@ export default function Home() {
                     <img
                       src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-25.svg"
                       alt="IT Hardware"
-                      width="80"
-                      height="80"
+                      width="200"
+                      height="200"
                     />
                   </div>
                   <h3>IT Hardware & Software & Other Equipment</h3>
