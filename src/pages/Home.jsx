@@ -358,7 +358,7 @@ export default function Home() {
             <div className="about-text animate-right" ref={aboutTextRef}>
               <h3>Growing Your Business</h3>
               <p>
-                Established in 2012. Tornado CO. has a team of well-trained workforce of
+                Established in 2012. B&G Consultant Pte Ltd has a team of well-trained workforce of
                 professionals specializing in pre-sales, system design, turnkey, project management,
                 system integration, build to order and after-sales service, who will discuss all
                 your corporate requirements with you before suggesting solutions to cater to the

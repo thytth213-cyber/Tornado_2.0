@@ -220,8 +220,28 @@
   margin-bottom: 32px;
 }
 
+.services-main .service-info .short-description {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
 .services-main .process {
   margin-bottom: 36px;
+}
+
+.services-main .process .description-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text);
+  background: rgba(59, 130, 246, 0.05);
+  padding: 20px 24px;
+  border-radius: 10px;
+  border-left: 4px solid var(--primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .services-main .process h3 {
