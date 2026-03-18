@@ -366,7 +366,7 @@ export default function Home() {
               </p>
               <p>
                 Our expertise has fuelled our global expansion. Today, we serve clients around the
-                world, building upon our established presence in Singapore and the region. We've
+                world, building upon our established presence in Hong Kong and the region. We've
                 enriched our service portfolio and product range to deliver cutting-edge solutions
                 that meet the complex needs of our diverse clientele.
               </p>
