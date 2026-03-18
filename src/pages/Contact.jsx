@@ -82,7 +82,7 @@ export default function Contact() {
                   </div>
                   <div className="info-content">
                     <h4>Address</h4>
-                    <p>111 Somerset Road, #03-09 TripleOne Somerset<br />Singapore 238164</p>
+                    <p>Room 1702, Sino Centre, 582-592 Nathan Rd., Mongkok, Kowloon<br />Hongkong</p>
                   </div>
                 </div>
 
@@ -92,7 +92,7 @@ export default function Contact() {
                   </div>
                   <div className="info-content">
                     <h4>Phone</h4>
-                    <p><a href="tel:+6567321431">+65 67321431</a></p>
+                    <p><a href="tel:+6567321431">+852 23840332</a></p>
                   </div>
                 </div>
 
@@ -102,7 +102,7 @@ export default function Contact() {
                   </div>
                   <div className="info-content">
                     <h4>Email</h4>
-                    <p><a href="mailto:enquiry@bgconsultantpteltd.com">enquiry@bgconsultantpteltd.com</a></p>
+                    <p><a href="mailto:enquiry@bgconsultantpteltd.com">sale@tornado.biz</a></p>
                   </div>
                 </div>
 
