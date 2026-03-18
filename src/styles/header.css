@@ -1,6 +1,6 @@
 :root{
   --container:1200px;
-  --nav-height:94px;
+  --nav-height:96px;
   --header-offset: var(--nav-height);
   --line:#e5e7eb;
   --text:#0f172a;
