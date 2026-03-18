@@ -116,12 +116,7 @@ export default function Products() {
                     alt={selectedProduct.name}
                   />
                 </div>
-                <div className="product-info">
-                  <h2>{selectedProduct.name}</h2>
-                  {selectedProduct.shortDescription && (
-                    <p className="short-description">{selectedProduct.shortDescription}</p>
-                  )}
-
+                <div className="product-info">          
                   <div className="features">
                     <h3>Key Features</h3>
                     {selectedProduct.description && (
