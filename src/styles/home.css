@@ -719,6 +719,8 @@ footer a {
   min-height: auto;
   transition: all 0.4s ease;
   grid-column: span 2;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 /* Hover effect - all boxes turn red with white text/icons */
@@ -774,6 +776,8 @@ footer a {
 
 .product-icon img {
   display: block;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .product-box h3 {
