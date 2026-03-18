@@ -28,9 +28,7 @@
 header.site-header{
   position: static;
   width:100%;
-  background: rgba(7, 17, 41, 0.98);
   border-bottom: 1px solid rgba(255,255,255,.1);
-  box-shadow: 0 4px 24px rgba(2,6,23,0.15);
   transition:
     box-shadow 0.3s ease,
     background 0.3s ease,
