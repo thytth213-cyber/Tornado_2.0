@@ -179,7 +179,7 @@ export default function About() {
               </div>
               <div className="timeline-content">
                 <h4>Founded</h4>
-                <p className="timeline-year">2015</p>
+                <p className="timeline-year">2012</p>
                 <p>
                   Started with a vision to revolutionize the technology consulting space, our
                   founders brought together world-class talent to solve complex business challenges.
@@ -195,7 +195,7 @@ export default function About() {
               </div>
               <div className="timeline-content">
                 <h4>Rapid Growth</h4>
-                <p className="timeline-year">2018</p>
+                <p className="timeline-year">2015</p>
                 <p>
                   Expanded our team and service offerings, successfully delivered 50+ projects
                   across multiple industries and countries.
