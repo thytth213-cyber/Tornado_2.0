@@ -33,9 +33,6 @@ header.site-header{
   z-index: 9999;
   width:100%;
   background: transparent;
-  border-bottom: 1px solid rgba(255,255,255,.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition:
     box-shadow 0.3s ease,
     background 0.3s ease,

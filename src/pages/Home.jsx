@@ -438,9 +438,108 @@ export default function Home() {
       </section>
 
       {/* ===== PRODUCTS SECTION ===== */}
-      <section className="section">
+      <section id="products" className="products-section">
         <div className="container">
-          <h2 className="h2">Why Choose Our Products</h2>
+          <div className="section-header">
+            <h2>Our Products</h2>
+          </div>
+          <div className="products-grid" ref={productsRef}>
+            {products.length > 0 ? (
+              products.map((product) => (
+                <div key={product._id} className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    {product.resolvedImage ? (
+                      <img
+                        src={product.resolvedImage}
+                        alt={product.name}
+                        width="200"
+                        height="200"
+                      />
+                    ) : (
+                      <div className="product-placeholder" style={{ width: '200px', height: '200px', backgroundColor: '#e0e0e0' }} />
+                    )}
+                  </div>
+                  <h3>{product.name}</h3>
+                  {product.shortDescription && (
+                    <p className="product-description">{product.shortDescription}</p>
+                  )}
+                  {!product.shortDescription && product.description && (
+                    <p className="product-description">{product.description}</p>
+                  )}
+                </div>
+              ))
+            ) : (
+              // Fallback to hardcoded products if no database products are loaded
+              <>
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g552.svg"
+                      alt="Industrial Machinery"
+                      width="200"
+                      height="200"
+                    />
+                  </div>
+                  <h3>Industrial Machinery</h3>
+                </div>
+
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-22.svg"
+                      alt="Telecommunications Equipment"
+                      width="200"
+                      height="200"
+                    />
+                  </div>
+                  <h3>Telecommunications Equipment</h3>
+                </div>
+
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-52.svg"
+                      alt="Lightning Systems"
+                      width="200"
+                      height="200"
+                    />
+                  </div>
+                  <h3>Lightning/ Metrological Systems/ Camera</h3>
+                </div>
+
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/g2930.svg"
+                      alt="Fire Fighting Equipment"
+                      width="200"
+                      height="200"
+                    />
+                  </div>
+                  <h3>Fire Fighting Equipment</h3>
+                </div>
+
+                <div className="product-box" data-stagger-child>
+                  <div className="product-icon">
+                    <img
+                      src="https://bgconsultantpteltd.com/wp-content/uploads/2024/12/Group-25.svg"
+                      alt="IT Hardware"
+                      width="200"
+                      height="200"
+                    />
+                  </div>
+                  <h3>IT Hardware & Software & Other Equipment</h3>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== WHY CHOOSE OUR PRODUCTS SECTION ===== */}
+      <section className="section why-choose-section">
+        <div className="container">
+          <h2 className="h2">Our Products</h2>
           <div className="benefits-grid" style={{ marginTop: "32px" }}>
             <div className="benefit-card animate-left">
               <div className="benefit-icon">
